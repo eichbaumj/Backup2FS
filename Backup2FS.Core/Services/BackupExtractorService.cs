@@ -116,9 +116,13 @@ namespace Backup2FS.Core.Services
                     writer.WriteLine("# Backup2FS Detailed Log File");
                     writer.WriteLine($"# Created: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                     writer.WriteLine("# This file contains detailed information about all files processed");
+                    writer.WriteLine("# Timestamp: Date and time of processing");
+                    writer.WriteLine("# FileID: iOS backup file identifier (folder/filename)");
+                    writer.WriteLine("# FileCopied: Normalized path of the file copied");
+                    writer.WriteLine("# MD5/SHA1/SHA256: File hash values for verification");
                     writer.WriteLine();
                     
-                    // Write CSV headers with the fields requested by the user
+                    // Write CSV headers
                     writer.WriteLine("Timestamp,FileID,FileCopied,MD5,SHA1,SHA256");
                 }
                 
@@ -132,31 +136,31 @@ namespace Backup2FS.Core.Services
 
         private void LogDetailedInfo(string fileID, string? filePath, string? relativePath, string? domain, Dictionary<string, string>? hashes, string status)
         {
+            // We need to log successful file operations with hash values
+            // so removing this skip condition
+            // if (status == "Success")
+            //    return;
+                
             try
             {
                 if (!string.IsNullOrEmpty(_detailedLogPath))
                 {
-                    // Format timestamp as proper ISO format with T separator
-                    string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                    // Format timestamp as proper human-readable ISO format
+                    string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                     
-                    // Format FileID to show folder/file structure (first 2 chars/folder + / + remaining fileID)
+                    // Format FileID to show folder/file structure correctly (first 2 chars/folder + / + remaining fileID)
                     string formattedFileID = string.IsNullOrEmpty(fileID) ? string.Empty : 
                         (fileID.Length >= 2 ? $"{fileID.Substring(0, 2)}/{fileID}" : fileID);
                     
-                    // Get the file copied path (relativePath)
-                    string fileCopied = string.IsNullOrEmpty(relativePath) ? string.Empty : relativePath;
+                    // Get the normalized file path (relativePath)
+                    string fileCopied = string.IsNullOrEmpty(relativePath) ? 
+                        (status.Contains("missing") || status.Contains("not found") ? "File missing" : string.Empty) : 
+                        relativePath;
                     
                     // Get hash values or empty strings if not available
                     string md5 = hashes != null && hashes.TryGetValue("md5", out string? md5Value) ? md5Value : string.Empty;
                     string sha1 = hashes != null && hashes.TryGetValue("sha1", out string? sha1Value) ? sha1Value : string.Empty;
                     string sha256 = hashes != null && hashes.TryGetValue("sha256", out string? sha256Value) ? sha256Value : string.Empty;
-                    
-                    // If all hashes are empty but we have a status, add it there for info purposes
-                    if (string.IsNullOrEmpty(md5) && string.IsNullOrEmpty(sha1) && string.IsNullOrEmpty(sha256) && 
-                        !string.IsNullOrEmpty(status) && !status.StartsWith("Success"))
-                    {
-                        sha256 = status;
-                    }
                     
                     // Format the log entry according to the expected format
                     string logEntry = $"{timestamp},{formattedFileID},{fileCopied},{md5},{sha1},{sha256}";
@@ -402,7 +406,9 @@ namespace Backup2FS.Core.Services
                             if (processedFiles % 10 == 0)
                             {
                                 ProgressReport?.Invoke((int)Math.Round(progressPercentage));
-                                // Remove percentage from log messages
+                                // Update log to include file count and percentage
+                                LogMessage?.Invoke($"Processed {processedFiles}/{totalFiles} files ({progressPercentage:F1}%)");
+                                // Detailed log still keeps the detailed information
                                 WriteDetailedLog($"Processing file {processedFiles}/{totalFiles}: {domain}/{relativePath}");
                             }
 
@@ -440,11 +446,20 @@ namespace Backup2FS.Core.Services
                                     if (success)
                                     {
                                         successCount++;
+                                        
+                                        // Calculate hash values for the copied file
+                                        var hashValues = CalculateFileHashes(destinationPath, linkedCts.Token);
+                                        
+                                        // Log the successful file copy with file ID and normalized path
+                                        LogDetailedInfo(fileId, sourcePath, destinationPath, domain, hashValues, "Success");
                                     }
                                     else
                                     {
                                         failureCount++;
                                         WriteDetailedLog($"Failed to process file: {domain}/{relativePath}");
+                                        
+                                        // Log the failed file copy
+                                        LogDetailedInfo(fileId, sourcePath, "", domain, null, "Failed to copy file");
                                     }
                                 }
                                 catch (OperationCanceledException)
@@ -795,16 +810,26 @@ namespace Backup2FS.Core.Services
                 return;
 
             // Skip verbose messages if filtering is enabled
-            if (filterVerbose && (message.Contains("File already exists") || message.Contains("skipping")))
+            if (filterVerbose && (
+                message.Contains("File already exists") || 
+                message.Contains("skipping") ||
+                message.Contains("Created directory") ||
+                message.Contains("Processing file") ||
+                message.Contains("Successfully processed file") ||
+                message.Contains("File progress:") ||
+                message.Contains("Created empty file:") ||
+                (message.Contains("Processed file:") && message.Contains("Hashes:"))
+            ))
                 return;
 
             try
             {
-                // Format timestamp to match UI log format
-                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                // Format timestamp to match the human-readable format
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 
-                // Format the system messages differently to distinguish them
-                string logEntry = $"{timestamp},SYSTEM/LOG,SYSTEM,,,{message}";
+                // For system messages, don't include hash values or file copied
+                // Place the message in the FileCopied column
+                string logEntry = $"{timestamp},,{message},,,";
 
                 lock (_logLock)
                 {
@@ -911,22 +936,26 @@ namespace Backup2FS.Core.Services
         {
             if (string.IsNullOrEmpty(_detailedLogPath))
                 return;
+                
+            // We want to log successful file operations with hash values
+            // Removed: if (success) return;
 
             try
             {
-                // Format timestamp as proper ISO format
-                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+                // Format timestamp as proper human-readable format
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 
                 // Format FileID to show folder/file structure
                 string formattedFileID = string.IsNullOrEmpty(fileId) ? string.Empty : 
                     (fileId.Length >= 2 ? $"{fileId.Substring(0, 2)}/{fileId}" : fileId);
                 
-                string fileCopied = success ? relativePath : string.Empty;
+                // Only include path if copy was successful
+                string fileCopied = success ? relativePath : "Failed to copy file";
                 
                 // Extract hash values, use empty string if not available
-                string md5 = hashValues.ContainsKey("md5") ? hashValues["md5"] : string.Empty;
-                string sha1 = hashValues.ContainsKey("sha1") ? hashValues["sha1"] : string.Empty;
-                string sha256 = hashValues.ContainsKey("sha256") ? hashValues["sha256"] : string.Empty;
+                string md5 = hashValues != null && hashValues.ContainsKey("md5") ? hashValues["md5"] : string.Empty;
+                string sha1 = hashValues != null && hashValues.ContainsKey("sha1") ? hashValues["sha1"] : string.Empty;
+                string sha256 = hashValues != null && hashValues.ContainsKey("sha256") ? hashValues["sha256"] : string.Empty;
                 
                 // Create the log entry
                 string logEntry = $"{timestamp},{formattedFileID},{fileCopied},{md5},{sha1},{sha256}";

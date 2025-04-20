@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.5" />
+    <PackageReference Include="plist-cil" Version="2.2.0" />
+    <PackageReference Include="Serilog" Version="3.0.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="System.Security.Cryptography.Algorithms" Version="4.3.1" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118">
+      <PrivateAssets>None</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Comment out the simplified approach for SQLite native libraries since they're causing build issues -->
+  <!--
+  <ItemGroup>
+    <None Include="$(NuGetPackageRoot)system.data.sqlite.core\1.0.118\runtimes\win-x86\native\SQLite.Interop.dll" Condition="Exists('$(NuGetPackageRoot)system.data.sqlite.core\1.0.118\runtimes\win-x86\native\SQLite.Interop.dll')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>SQLite.Interop.x86.dll</Link>
+    </None>
+    
+    <None Include="$(NuGetPackageRoot)system.data.sqlite.core\1.0.118\runtimes\win-x64\native\SQLite.Interop.dll" Condition="Exists('$(NuGetPackageRoot)system.data.sqlite.core\1.0.118\runtimes\win-x64\native\SQLite.Interop.dll')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>SQLite.Interop.x64.dll</Link>
+    </None>
+    
+    <None Include="$(NuGetPackageRoot)system.data.sqlite.core\1.0.118\runtimes\win-x86\native\SQLite.Interop.dll" Condition="Exists('$(NuGetPackageRoot)system.data.sqlite.core\1.0.118\runtimes\win-x86\native\SQLite.Interop.dll')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes\win-x86\native\SQLite.Interop.dll</Link>
+    </None>
+    
+    <None Include="$(NuGetPackageRoot)system.data.sqlite.core\1.0.118\runtimes\win-x64\native\SQLite.Interop.dll" Condition="Exists('$(NuGetPackageRoot)system.data.sqlite.core\1.0.118\runtimes\win-x64\native\SQLite.Interop.dll')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes\win-x64\native\SQLite.Interop.dll</Link>
+    </None>
+  </ItemGroup>
+  -->
+
+  <ItemGroup>
+    <Folder Include="Models\" />
+    <Folder Include="Services\" />
+    <Folder Include="Helpers\" />
+    <Folder Include="Interfaces\" />
+  </ItemGroup>
+
+</Project> 

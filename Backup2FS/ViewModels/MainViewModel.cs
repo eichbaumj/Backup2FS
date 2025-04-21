@@ -15,6 +15,8 @@ using System.Windows;
 using System.Windows.Input;
 using Backup2FS.Core.Services;
 using System.Threading;
+using Backup2FS.Services;
+using System.Xml;
 
 // Add reference for FolderBrowserDialog
 using WinForms = System.Windows.Forms;
@@ -95,7 +97,7 @@ namespace Backup2FS.ViewModels
         private bool _usesSHA1 = false;
 
         [ObservableProperty]
-        private bool _usesSHA256 = true;
+        private bool _usesSHA256 = false;
 
         [ObservableProperty]
         private bool _isOptionsDialogOpen = false;
@@ -128,6 +130,7 @@ namespace Backup2FS.ViewModels
 
         private readonly BackupExtractorService _backupExtractorService;
         private CancellationTokenSource _extractionCancellationTokenSource;
+        private readonly SettingsManager _settingsManager;
 
         [ObservableProperty]
         private string _selectedHashAlgorithm = "sha256";
@@ -140,6 +143,9 @@ namespace Backup2FS.ViewModels
 
         // Store the last time we changed pause state - for debouncing
         private long _lastPauseOperationTicks = 0;
+
+        // Add a field to store temporary hash algorithm selection
+        private string _tempHashAlgorithm = "sha256";
 
         // Animate progress changes for visual smoothness
         private void InitializeProgressAnimation()
@@ -197,15 +203,7 @@ namespace Backup2FS.ViewModels
             });
         }
 
-        // Add a private method to update hash algorithm flags based on selected algorithm
-        private void UpdateHashAlgorithmFlags()
-        {
-            UsesMD5 = SelectedHashAlgorithm.Equals("md5", StringComparison.OrdinalIgnoreCase);
-            UsesSHA1 = SelectedHashAlgorithm.Equals("sha1", StringComparison.OrdinalIgnoreCase);
-            UsesSHA256 = SelectedHashAlgorithm.Equals("sha256", StringComparison.OrdinalIgnoreCase);
-        }
-
-        // Add partial method to handle property changes
+        // Add a partial method to handle property changes
         partial void OnSelectedHashAlgorithmChanged(string value)
         {
             UpdateHashAlgorithmFlags();
@@ -219,57 +217,134 @@ namespace Backup2FS.ViewModels
 
         partial void OnUsesMD5Changed(bool value)
         {
-            // Update hash algorithms when checkbox state changes
-            UpdateBackupExtractorHashAlgorithms();
+            // Don't update hash algorithms on checkbox state changes
+            // Will be handled in SaveOptions
         }
         
         partial void OnUsesSHA1Changed(bool value)
         {
-            // Update hash algorithms when checkbox state changes
-            UpdateBackupExtractorHashAlgorithms();
+            // Don't update hash algorithms on checkbox state changes
+            // Will be handled in SaveOptions
         }
         
         partial void OnUsesSHA256Changed(bool value)
         {
-            // Update hash algorithms when checkbox state changes
-            UpdateBackupExtractorHashAlgorithms();
+            // Don't update hash algorithms on checkbox state changes
+            // Will be handled in SaveOptions
         }
         
         // Method to update hash algorithms based on checkbox states
         private void UpdateBackupExtractorHashAlgorithms()
         {
-            // Create a list of selected hash algorithms
-            var selectedAlgorithms = new List<string>();
-            
-            if (UsesMD5)
-                selectedAlgorithms.Add("md5");
-                
-            if (UsesSHA1)
-                selectedAlgorithms.Add("sha1");
-                
-            if (UsesSHA256)
-                selectedAlgorithms.Add("sha256");
-            
-            // If no algorithms selected, default to SHA256
-            if (selectedAlgorithms.Count == 0)
+            // Create a dictionary of selected hash algorithms
+            var selectedAlgorithms = new Dictionary<string, bool>
             {
-                UsesSHA256 = true;
-                selectedAlgorithms.Add("sha256");
-            }
+                { "md5", UsesMD5 },
+                { "sha1", UsesSHA1 },
+                { "sha256", UsesSHA256 }
+            };
+            
+            // Create a list for the backup extractor service
+            var algorithmList = new List<string>();
+            if (UsesMD5) algorithmList.Add("md5");
+            if (UsesSHA1) algorithmList.Add("sha1");
+            if (UsesSHA256) algorithmList.Add("sha256");
+            
+            // Removed code that forces SHA-256 if nothing is selected
+            
+            // Save the current selection to ensure it persists
+            SelectedHashAlgorithm = _settingsManager.GetHashAlgorithmsAsString();
             
             // Update the backup extractor service
             if (_backupExtractorService != null)
             {
-                _backupExtractorService.SetHashAlgorithms(selectedAlgorithms);
+                _backupExtractorService.SetHashAlgorithms(algorithmList);
+            }
+            
+            // Save to settings file
+            _settingsManager?.SetHashAlgorithms(selectedAlgorithms);
+            
+            // Log what was saved
+            LogMessage($"DEBUG: Updated hash algorithms in UpdateBackupExtractorHashAlgorithms: {SelectedHashAlgorithm}");
+        }
+
+        // Add a private method to update hash algorithm flags based on selected algorithm
+        private void UpdateHashAlgorithmFlags()
+        {
+            try
+            {
+                // Get the saved settings from the settings manager
+                var algorithms = _settingsManager.GetHashAlgorithms();
+                
+                // Set checkboxes based on algorithm settings
+                UsesMD5 = algorithms["md5"];
+                UsesSHA1 = algorithms["sha1"];
+                UsesSHA256 = algorithms["sha256"];
+                
+                // Update the SelectedHashAlgorithm string for display/debug purposes
+                SelectedHashAlgorithm = _settingsManager.GetHashAlgorithmsAsString();
+            }
+            catch (Exception ex)
+            {
+                // If parsing fails, log
+                System.Diagnostics.Debug.WriteLine($"Error updating hash flags: {ex.Message}");
             }
         }
 
-        [ObservableProperty]
-        private bool _canOpenOutputFolder = false;
-
-        #endregion
-
-        #region Commands
+        [RelayCommand]
+        public void SaveOptions()
+        {
+            Console.WriteLine("========== SaveOptions Method Started ==========");
+            
+            try
+            {
+                // Create a dictionary of selected hash algorithms
+                var hashAlgorithms = new Dictionary<string, bool>
+                {
+                    { "md5", UsesMD5 },
+                    { "sha1", UsesSHA1 },
+                    { "sha256", UsesSHA256 }
+                };
+                
+                Console.WriteLine($"Current checkbox states - MD5:{UsesMD5}, SHA1:{UsesSHA1}, SHA256:{UsesSHA256}");
+                
+                // Save to settings manager
+                _settingsManager.SetHashAlgorithms(hashAlgorithms);
+                
+                // Update the SelectedHashAlgorithm string for display/debug purposes
+                SelectedHashAlgorithm = _settingsManager.GetHashAlgorithmsAsString();
+                Console.WriteLine($"Updated SelectedHashAlgorithm property to: '{SelectedHashAlgorithm}'");
+                
+                // Update hash algorithms in backup extractor service
+                var selectedAlgorithmsList = new List<string>();
+                if (UsesMD5) selectedAlgorithmsList.Add("md5");
+                if (UsesSHA1) selectedAlgorithmsList.Add("sha1");
+                if (UsesSHA256) selectedAlgorithmsList.Add("sha256");
+                
+                if (_backupExtractorService != null)
+                {
+                    _backupExtractorService.SetHashAlgorithms(selectedAlgorithmsList);
+                    Console.WriteLine($"Updated backup extractor service with algorithms: {string.Join(", ", selectedAlgorithmsList)}");
+                }
+                
+                // Close the options dialog
+                IsOptionsDialogOpen = false;
+                
+                Console.WriteLine($"Saved hash algorithms: MD5={UsesMD5}, SHA1={UsesSHA1}, SHA256={UsesSHA256}");
+                Console.WriteLine($"SelectedHashAlgorithm is now: {SelectedHashAlgorithm}");
+                
+                // Verify settings were saved by loading them back
+                var verifySettings = _settingsManager.GetHashAlgorithms();
+                Console.WriteLine($"Verified settings - MD5:{verifySettings["md5"]}, SHA1:{verifySettings["sha1"]}, SHA256:{verifySettings["sha256"]}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SaveOptions: {ex.Message}");
+                LogMessage($"Error saving options: {ex.Message}", true);
+            }
+            
+            Console.WriteLine("========== SaveOptions Method Completed ==========");
+        }
 
         [RelayCommand]
         private void BrowseBackup()
@@ -349,18 +424,56 @@ namespace Backup2FS.ViewModels
                 // Create cancellation token
                 _extractionCancellationTokenSource = new CancellationTokenSource();
                 
-                // Log hash algorithms being used
+                // Update hash algorithms in the backup extractor service before logging
+                // Use the current CheckBox states to update
+                var selectedAlgorithms = new List<string>();
+                
+                if (UsesMD5)
+                    selectedAlgorithms.Add("md5");
+                    
+                if (UsesSHA1)
+                    selectedAlgorithms.Add("sha1");
+                    
+                if (UsesSHA256)
+                    selectedAlgorithms.Add("sha256");
+                
+                // Removed code that forces SHA-256 if nothing is selected
+                // Set the property to the current selection (could be empty)
+                SelectedHashAlgorithm = string.Join(",", selectedAlgorithms);
+                
+                // Log hash algorithms being used based on current checkbox state
                 string hashAlgorithms = "";
                 if (UsesMD5) hashAlgorithms += "MD5 ";
                 if (UsesSHA1) hashAlgorithms += "SHA-1 ";
                 if (UsesSHA256) hashAlgorithms += "SHA-256 ";
-                AddLog($"Using hash algorithms: {hashAlgorithms.Trim()}");
+                hashAlgorithms = hashAlgorithms.Trim();
+                
+                if (string.IsNullOrEmpty(hashAlgorithms))
+                {
+                    AddLog("Warning: No hash algorithms selected. Files will be normalized without hash verification.");
+                }
+                else
+                {
+                    AddLog($"Using hash algorithms: {hashAlgorithms}");
+                }
                 
                 // Force UI refresh
                 await Task.Delay(50);
                 
-                // Update hash algorithms in the backup extractor service
-                UpdateBackupExtractorHashAlgorithms();
+                // Update the backup extractor service
+                if (_backupExtractorService != null)
+                {
+                    _backupExtractorService.SetHashAlgorithms(selectedAlgorithms);
+                }
+                
+                // Save settings using dictionary-based approach
+                var hashSettings = new Dictionary<string, bool>
+                {
+                    { "md5", UsesMD5 },
+                    { "sha1", UsesSHA1 },
+                    { "sha256", UsesSHA256 }
+                };
+                _settingsManager?.SetHashAlgorithms(hashSettings);
                 
                 // Set up the progress reporting to update the UI thread properly
                 _backupExtractorService.ProgressReport += (progress) =>
@@ -676,20 +789,49 @@ namespace Backup2FS.ViewModels
         [RelayCommand]
         private void OpenOptionsDialog()
         {
-            IsOptionsDialogOpen = true;
+            try
+            {
+                // Load the current settings into the dialog
+                UpdateHashAlgorithmFlags();
+                
+                // Store current settings in case of cancel
+                _tempHashAlgorithm = SelectedHashAlgorithm;
+                
+                // Open the dialog
+                IsOptionsDialogOpen = true;
+                
+                Console.WriteLine($"OPTIONS DIALOG OPENED - Current algorithms: {SelectedHashAlgorithm}");
+                Console.WriteLine($"Checkbox states: MD5:{UsesMD5}, SHA1:{UsesSHA1}, SHA256:{UsesSHA256}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error opening options dialog: {ex.Message}");
+            }
         }
 
         [RelayCommand]
         private void CloseOptionsDialog()
         {
-            IsOptionsDialogOpen = false;
-        }
-
-        [RelayCommand]
-        private void SaveOptions()
-        {
-            // Save options logic would go here
-            IsOptionsDialogOpen = false;
+            try
+            {
+                // Restore previous settings if dialog was canceled
+                var oldAlgorithms = _tempHashAlgorithm?.Split(',').Select(a => a.Trim().ToLower()).ToList() ?? new List<string>();
+                
+                // Update checkbox states based on previous settings
+                UsesMD5 = oldAlgorithms.Contains("md5");
+                UsesSHA1 = oldAlgorithms.Contains("sha1");
+                UsesSHA256 = oldAlgorithms.Contains("sha256");
+                
+                // Close the dialog
+                IsOptionsDialogOpen = false;
+                
+                Console.WriteLine($"OPTIONS DIALOG CANCELED - Restored to previous selection: {_tempHashAlgorithm}");
+                Console.WriteLine($"Checkbox states after restore: MD5:{UsesMD5}, SHA1:{UsesSHA1}, SHA256:{UsesSHA256}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error closing options dialog: {ex.Message}");
+            }
         }
 
         [RelayCommand]
@@ -726,6 +868,9 @@ namespace Backup2FS.ViewModels
                 AddLog("Started a new session. Ready for normalization.");
             }
         }
+
+        [ObservableProperty]
+        private bool _canOpenOutputFolder = false;
 
         #endregion
 
@@ -807,7 +952,6 @@ namespace Backup2FS.ViewModels
                         
                         // Clear and add apps to the collection first.
                         InstalledApps.Clear();
-                        AddLog($"Adding {deviceInfo.InstalledApps.Count} installed applications to list...");
                         foreach (var app in deviceInfo.InstalledApps)
                         {
                             InstalledApps.Add(app); 
@@ -986,35 +1130,50 @@ namespace Backup2FS.ViewModels
 
         public MainViewModel()
         {
-            // Initialize hash algorithm options
-            HashAlgorithms = new ObservableCollection<string>
+            try
             {
-                "SHA-1",
-                "SHA-256",
-                "MD5"
-            };
-            SelectedHashAlgorithm = "SHA-1";
-            
-            // Initialize progress animation
-            InitializeProgressAnimation();
-            
-            // Initialize the BackupExtractorService
-            _backupExtractorService = new BackupExtractorService();
-            _backupExtractorService.LogMessage += AddLog;
-            _backupExtractorService.ProgressReport += (progress) =>
+                // Initialize the settings manager
+                _settingsManager = new SettingsManager();
+                
+                // Initialize hash algorithm options
+                HashAlgorithms = new ObservableCollection<string>
+                {
+                    "SHA-1",
+                    "SHA-256",
+                    "MD5"
+                };
+                
+                // Load hash algorithm settings from settings manager
+                UpdateHashAlgorithmFlags();
+                
+                // Store the current setting for dialog cancel handling
+                _tempHashAlgorithm = SelectedHashAlgorithm;
+                
+                // Initialize progress animation
+                InitializeProgressAnimation();
+                
+                // Initialize the BackupExtractorService
+                _backupExtractorService = new BackupExtractorService();
+                _backupExtractorService.LogMessage += AddLog;
+                _backupExtractorService.ProgressReport += (progress) =>
+                {
+                    // Progress reporting code remains unchanged
+                    // ... existing code ...
+                };
+                
+                // Set hash algorithms in the backup extractor service
+                var selectedAlgorithms = new List<string>();
+                if (UsesMD5) selectedAlgorithms.Add("md5");
+                if (UsesSHA1) selectedAlgorithms.Add("sha1");
+                if (UsesSHA256) selectedAlgorithms.Add("sha256");
+                _backupExtractorService.SetHashAlgorithms(selectedAlgorithms);
+                
+                // ... existing code ...
+            }
+            catch (Exception ex)
             {
-                // Update progress percentage
-                NormalizationProgressPercent = progress;
-            };
-            
-            // Set default hash algorithms (SHA-256)
-            UpdateBackupExtractorHashAlgorithms();
-            
-            // Initialize the CancellationTokenSource
-            _extractionCancellationTokenSource = new CancellationTokenSource();
-            
-            // Initialize commands
-            // ... existing code ...
+                // ... existing code ...
+            }
         }
 
         // Add a partial method to set CanSaveLog and IsCompleted when normalization completes

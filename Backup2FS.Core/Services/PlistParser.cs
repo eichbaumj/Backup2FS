@@ -99,7 +99,6 @@ namespace Backup2FS.Core.Services
                         applicationsObj is NSDictionary appDict)
                     {
                         applicationsDict = appDict;
-                        logger?.Invoke($"Found {applicationsDict.Count} entries in Applications dictionary.");
                         
                         // Quickly create InstalledApp objects with BundleId and RawAppData
                         foreach (string bundleId in applicationsDict.Keys)
@@ -111,11 +110,9 @@ namespace Backup2FS.Core.Services
                                     DisplayName = GetAppNameFromBundleId(bundleId), // Can still get this quickly
                                     RawAppData = appDataDict // Store the raw dictionary
                                 };
-                                logger?.Invoke($"[PlistParser] Adding app from Applications dict: {app.BundleId}, RawAppData is {(app.RawAppData != null ? "set" : "NULL")}");
                                 deviceInfo.InstalledApps.Add(app);
                             }
                         }
-                         logger?.Invoke($"Initial processing of Applications dictionary complete.");
                     }
                     else
                     {
@@ -151,12 +148,11 @@ namespace Backup2FS.Core.Services
                                     RawAppData = appDataDict // Store raw dict (might be null if not in Applications dict)
                                 };
                                 
-                                logger?.Invoke($"[PlistParser] Adding app from Installed Applications array: {app.BundleId}, RawAppData is {(app.RawAppData != null ? "set" : "NULL")}");
                                 deviceInfo.InstalledApps.Add(app);
                                 processedBundleIds.Add(bundleId);
                             }
                         }
-                         logger?.Invoke($"Processing of Installed Applications array complete.");
+                        logger?.Invoke($"Processing of Installed Applications array complete.");
                     }
                     else
                     {
@@ -170,6 +166,30 @@ namespace Backup2FS.Core.Services
                     logger?.Invoke($"Error parsing Info.plist: {ex.Message}");
                     // Consider if we should re-throw or just log and continue
                     // throw new Exception($"Error parsing Info.plist: {ex.Message}", ex);
+                }
+            }
+            
+            // Parse status.plist for Date field
+            string statusPlistPath = Path.Combine(backupPath, "status.plist");
+            if (File.Exists(statusPlistPath))
+            {
+                try
+                {
+                    logger?.Invoke("Parsing status.plist for backup date...");
+                    var statusDict = (NSDictionary)PropertyListParser.Parse(statusPlistPath);
+                    
+                    // Look for the Date key in status.plist
+                    if (statusDict.TryGetValue("Date", out NSObject statusDateObj) && statusDateObj is NSDate statusDate)
+                    {
+                        // Update the LastBackupDate with the value from status.plist
+                        deviceInfo.LastBackupDate = statusDate.Date.ToString("yyyy-MM-dd HH:mm:ss");
+                        logger?.Invoke($"Found backup date in status.plist: {deviceInfo.LastBackupDate}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger?.Invoke($"Error parsing status.plist: {ex.Message}");
+                    // Don't rethrow, just log the error as this is not critical
                 }
             }
             

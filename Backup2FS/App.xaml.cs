@@ -7,6 +7,7 @@ using System.Windows;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Linq;
+using Backup2FS.Services;
 
 namespace Backup2FS
 {
@@ -18,6 +19,7 @@ namespace Backup2FS
         private Mutex _instanceMutex;
         private const string MutexName = "Backup2FS_SingleInstanceMutex";
         private bool _mutexOwned = false;
+        private SettingsManager _settingsManager;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -25,6 +27,9 @@ namespace Backup2FS
             
             try
             {
+                // Initialize settings manager
+                _settingsManager = new SettingsManager();
+                
                 // Check for existing instance
                 _instanceMutex = new Mutex(true, MutexName, out _mutexOwned);
                 
@@ -36,8 +41,16 @@ namespace Backup2FS
                     return;
                 }
                 
-                // Initialize SQLite
-                InitializeSQLite();
+                // Initialize SQLite - try initialization but don't show error popup
+                try
+                {
+                    InitializeSQLite();
+                }
+                catch (Exception ex)
+                {
+                    // Log error but don't show popup since application works anyway
+                    Console.WriteLine($"SQLite initialization warning (non-fatal): {ex.Message}");
+                }
                 
                 // Set up exception handlers
                 AppDomain.CurrentDomain.UnhandledException += (s, args) => 
@@ -108,11 +121,10 @@ namespace Backup2FS
                     }
                 }
                 
-                // If we still don't have the source DLL, show error
+                // If we still don't have the source DLL, log it but don't show error since app works anyway
                 if (!File.Exists(sourceDll))
                 {
-                    System.Windows.MessageBox.Show($"Could not find SQLite.Interop DLL for {architectureType} architecture. Please ensure the application is properly installed.",
-                        "SQLite Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Console.WriteLine($"SQLite.Interop DLL for {architectureType} not found, but application may still work.");
                     return;
                 }
                 
@@ -131,35 +143,43 @@ namespace Backup2FS
                     }
                     catch (Exception ex)
                     {
-                        System.Windows.MessageBox.Show($"Failed to copy SQLite native library: {ex.Message}", 
-                            "SQLite Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        // Log the error but don't show popup
+                        Console.WriteLine($"Warning: Failed to copy SQLite library: {ex.Message}");
                         return;
                     }
                 }
                 
-                // Test SQLite connection
-                using (var connection = new SQLiteConnection("Data Source=:memory:"))
+                // Test SQLite connection - if this works, the rest of the application should work too
+                try
                 {
-                    connection.Open();
-                    using (var command = connection.CreateCommand())
+                    using (var connection = new SQLiteConnection("Data Source=:memory:"))
                     {
-                        command.CommandText = "SELECT sqlite_version()";
-                        string version = command.ExecuteScalar().ToString();
-                        Console.WriteLine($"SQLite version: {version}");
+                        connection.Open();
+                        using (var command = connection.CreateCommand())
+                        {
+                            command.CommandText = "SELECT sqlite_version()";
+                            string version = command.ExecuteScalar().ToString();
+                            Console.WriteLine($"SQLite version: {version}");
+                        }
                     }
+                    
+                    Console.WriteLine("SQLite initialization completed successfully.");
                 }
-                
-                Console.WriteLine("SQLite initialization completed successfully.");
+                catch (Exception ex)
+                {
+                    // If we can't connect, log it but don't show error - application might still work
+                    Console.WriteLine($"Warning: SQLite connection test failed: {ex.Message}");
+                }
             }
             catch (DllNotFoundException dllEx)
             {
-                System.Windows.MessageBox.Show($"Failed to load SQLite.Interop.dll: {dllEx.Message}\nPlease ensure the application is properly installed.", 
-                    "SQLite Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Log the error but don't show popup since it works anyway
+                Console.WriteLine($"Warning: SQLite.Interop.dll not found: {dllEx.Message}");
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"SQLite initialization failed: {ex.Message}", 
-                    "SQLite Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Log the error but don't show popup
+                Console.WriteLine($"Warning: SQLite initialization warning: {ex.Message}");
             }
         }
 

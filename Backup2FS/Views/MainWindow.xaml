@@ -291,7 +291,7 @@
                                   Margin="0,0,0,8">
                             <Run Text="www.elusivedata.io"/>
                             <Run Text=" | "/>
-                            <Run Text="contact@elusivedata.io"/>
+                            <Run Text="support@elusivedata.io"/>
                         </TextBlock>
                     </StackPanel>
                 </Border>
@@ -542,7 +542,7 @@
                                              Margin="0,4" FontSize="12"
                                              Foreground="{DynamicResource ElusiveDataLightGrayBrush}"/>
                                     
-                                    <TextBlock Grid.Row="11" Grid.Column="0" Text="Last Backup Date:" 
+                                    <TextBlock Grid.Row="11" Grid.Column="0" Text="Backup Date:" 
                                              Style="{StaticResource MaterialDesignBody1TextBlock}" 
                                              Margin="0,4" FontSize="12"
                                              Foreground="{DynamicResource ElusiveDataLightGrayBrush}"/>

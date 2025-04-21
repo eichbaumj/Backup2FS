@@ -205,16 +205,10 @@ namespace Backup2FS.Core.Services
         /// <param name="algorithms">List of hash algorithms (md5, sha1, sha256)</param>
         public void SetHashAlgorithms(List<string> algorithms)
         {
-            if (algorithms == null || algorithms.Count == 0)
-            {
-                // Default to SHA-256 if no algorithms are specified
-                _hashAlgorithms = new List<string> { "sha256" };
-            }
-            else
-            {
-                _hashAlgorithms = algorithms;
-            }
+            // Accept empty list without defaulting to SHA-256
+            _hashAlgorithms = algorithms ?? new List<string>();
             
+            Console.WriteLine($"Hash algorithms set to: {(_hashAlgorithms.Count > 0 ? string.Join(", ", _hashAlgorithms) : "none")}");
             // Don't log this message on startup, only when extraction begins
             // The user will see this in the detailed log
         }
@@ -631,6 +625,13 @@ namespace Backup2FS.Core.Services
                     File.Delete(destPath);
                 }
 
+                // If no hash algorithms are selected, use a simple file copy
+                if (_hashAlgorithms == null || _hashAlgorithms.Count == 0)
+                {
+                    await CopyWithoutHashAsync(sourcePath, destPath, token);
+                    return true;
+                }
+
                 // Try to perform a stream copy with hash verification
                 using var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.SequentialScan);
                 using var destStream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, FileOptions.SequentialScan);
@@ -1004,6 +1005,12 @@ namespace Backup2FS.Core.Services
         private Dictionary<string, string> CalculateFileHashes(string filePath, CancellationToken token)
         {
             var results = new Dictionary<string, string>();
+            
+            // If no hash algorithms are selected, return an empty dictionary
+            if (_hashAlgorithms == null || _hashAlgorithms.Count == 0)
+            {
+                return results;
+            }
             
             try
             {

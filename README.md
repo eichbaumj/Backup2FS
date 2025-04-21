@@ -1,99 +1,62 @@
 # Backup2FS
 
-A modern Windows application for normalizing iOS backups into standard file system structures for forensic analysis.
+iOS Backup File Recovery and Normalization Tool
 
-![Backup2FS Logo](Backup2FS/Resources/Images/logo.png)
+## Overview
+
+Backup2FS is a Windows application designed to help recover and normalize iOS backup files. It allows you to extract and organize files from iOS device backups in a user-friendly way.
 
 ## Features
 
-- Convert iOS backup structures into standard file system structures for forensic analysis
-- Extract and normalize iOS backups with intelligent domain mapping
-- Display detailed device information from backups
-- Show installed applications with app icons when available
-- Support for different hashing algorithms (MD5, SHA1, SHA256)
-- Real-time progress tracking with pause/resume capability
-- Detailed logging with CSV export
-- Modern UI with Elusive Data branding
+- Extracts files from iOS device backups
+- Normalizes backup files into a standard file system format
+- Supports multiple hash algorithms (MD5, SHA-1, SHA-256)
+- Displays device information and installed apps
+- Provides detailed logging of operations
 
-## Technical Details
+## System Requirements
 
-Backup2FS is built using:
+- Windows 10 or later
+- .NET 7.0 or later
+- 4GB RAM minimum (8GB recommended)
+- 1GB free disk space plus space for the extracted backup files
 
-- .NET 7.0 with WPF for the UI
-- MVVM architecture with CommunityToolkit.Mvvm
-- Material Design for WPF
-- SQLite for parsing iOS backup databases
-- Asynchronous processing for responsive UI
+## Installation
 
-## Architecture
+1. Download the latest release from the [Releases](https://github.com/YOUR-USERNAME/Backup2FS/releases) page
+2. Extract the ZIP file to a location of your choice
+3. Run `Backup2FS.exe` to start the application
 
-The solution is divided into two main projects:
+## Usage
 
-1. **Backup2FS** - The WPF UI application
-   - Views: XAML UI components
-   - ViewModels: UI logic and data binding
-   - Resources: Styles, images, and other UI assets
+1. Click the "Select" button next to "Backup Folder" to choose the iOS backup folder
+   - Usually located at `C:\Users\<username>\AppData\Roaming\Apple Computer\MobileSync\Backup\`
+2. Click the "Select" button next to "Destination Folder" to choose where to save the extracted files
+3. Click "Normalize" to begin the extraction process
+4. View progress in the log window
+5. Once complete, click "Open Folder" to view the extracted files
 
-2. **Backup2FS.Core** - The business logic library
-   - Models: Data structures for backups and device info
-   - Services: Core processing functionality
-   - Helpers: Utility classes
+## Configuration
 
-## iOS Backup Structure
+You can configure the hash algorithms used for file verification:
+1. Click the Settings (gear) icon in the top-right corner
+2. Select your preferred hash algorithms (MD5, SHA-1, SHA-256)
+3. Click "OK" to save your preferences
 
-iOS backups consist of:
-
-- **Manifest.db**: SQLite database containing file mappings
-- **Manifest.plist**: Device information and backup metadata
-- **Info.plist**: Additional backup information
-- **Files**: Stored with hash-based filenames in subdirectories
-
-The application converts these to a standard iOS file system structure, making it easy for forensic analysts to navigate and examine the data.
-
-### Domain Mapping
-
-iOS backup files are organized by domains, which represent different parts of the iOS filesystem. Backup2FS maps these domains to their corresponding filesystem paths:
-
-- **HomeDomain**: User's home directory
-- **MediaDomain**: Media files (photos, videos, etc.)
-- **CameraRollDomain**: Camera photos and videos
-- **AppDomain-***: Individual application data
-- **KeychainDomain**: Stored credentials (if unencrypted)
-- And many more...
-
-The extraction process:
-1. Reads the backup's Manifest.db SQLite database
-2. Maps each file to its proper filesystem location
-3. Recreates the iOS directory structure
-4. Copies files with hash verification
-
-## Development
-
-### Prerequisites
-
-- Visual Studio 2022 or newer
-- .NET 7.0 SDK
-
-### Building
+## Build from Source
 
 1. Clone the repository
-2. Open the solution in Visual Studio
+   ```
+   git clone https://github.com/YOUR-USERNAME/Backup2FS.git
+   ```
+2. Open the solution in Visual Studio 2022 or later
 3. Restore NuGet packages
 4. Build the solution
 
-## Improvements Over Original Python Version
-
-- Modern UI with Material Design
-- Better multithreading support
-- Improved error handling
-- App icon extraction and display
-- Full MVVM architecture for better maintainability
-- Native Windows integration
-
 ## License
 
-© Elusive Data 2025. All rights reserved.
+Copyright © 2025 Elusive Data - All Rights Reserved
 
 ## Contact
 
-Developed by James Eichbaum at Elusive Data. 
+For support or inquiries, please contact support@elusivedata.io 

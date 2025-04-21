@@ -694,6 +694,34 @@ namespace Backup2FS.ViewModels
                         writer.WriteLine(LogOutput);
                         writer.WriteLine();
                         
+                        // Add device information section
+                        writer.WriteLine("===== DEVICE INFORMATION =====");
+                        writer.WriteLine($"Device Name: {DeviceName}");
+                        writer.WriteLine($"Model: {Model}");
+                        writer.WriteLine($"iOS Version: {IosVersion}");
+                        writer.WriteLine($"Build Version: {BuildVersion}");
+                        writer.WriteLine($"Serial Number: {SerialNumber}");
+                        writer.WriteLine($"Unique Device ID: {UniqueDeviceId}");
+                        writer.WriteLine($"IMEI: {Imei}");
+                        writer.WriteLine($"MEID: {Meid}");
+                        writer.WriteLine($"ICCID: {Iccid}");
+                        writer.WriteLine($"Phone Number: {PhoneNumber}");
+                        writer.WriteLine($"Backup Date: {LastBackupDate}");
+                        writer.WriteLine($"Encrypted: {IsEncrypted}");
+                        writer.WriteLine();
+                        
+                        // Add installed apps section
+                        writer.WriteLine("===== INSTALLED APPS =====");
+                        writer.WriteLine("Bundle ID,Display Name");
+                        
+                        // List all installed apps
+                        foreach (var app in InstalledApps)
+                        {
+                            string displayName = !string.IsNullOrEmpty(app.DisplayName) ? app.DisplayName : "[No Name]";
+                            writer.WriteLine($"{app.BundleId},{displayName}");
+                        }
+                        writer.WriteLine();
+                        
                         // If detailed log exists, append its content
                         if (detailedLogExists)
                         {

@@ -6,6 +6,8 @@ iOS Backup File Recovery and Normalization Tool
 
 Backup2FS is a Windows application designed to help recover and normalize iOS backup files. It allows you to extract and organize files from iOS device backups in a user-friendly way.
 
+![Main Interface](docs/screenshots/main_interface.png)
+
 ## Features
 
 - Extracts files from iOS device backups
@@ -13,6 +15,20 @@ Backup2FS is a Windows application designed to help recover and normalize iOS ba
 - Supports multiple hash algorithms (MD5, SHA-1, SHA-256)
 - Displays device information and installed apps
 - Provides detailed logging of operations
+
+## Screenshots
+
+### Main Interface
+![Main Interface](docs/screenshots/main_interface.png)
+
+### Hash Algorithm Selection
+![Hash Settings](docs/screenshots/hash_settings.png)
+
+### Log Output
+![Log Output](docs/screenshots/log_output.png)
+
+### About Dialog
+![About Dialog](docs/screenshots/about_dialog.png)
 
 ## System Requirements
 

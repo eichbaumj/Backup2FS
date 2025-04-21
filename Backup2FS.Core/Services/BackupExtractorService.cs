@@ -412,7 +412,7 @@ namespace Backup2FS.Core.Services
                                 string sourcePath = Path.Combine(backupPath, GetBackupFilePath(fileId));
                                 if (!File.Exists(sourcePath))
                                 {
-                                    WriteDetailedLog($"Source file not found: {sourcePath} for {domain}/{relativePath}");
+                                    LogDetailedInfo(fileId, sourcePath, relativePath, domain, null, $"Source file not found: {sourcePath} for {domain}/{relativePath}");
                                     failureCount++;
                                     continue;
                                 }
@@ -509,10 +509,33 @@ namespace Backup2FS.Core.Services
                     WriteDetailedLog($"Created directory: {destinationDirectory}");
                 }
 
+                // Extract fileID from sourcePath - expected format: [backupPath]/[2-char-folder]/[fileID]
+                string fileID = "";
+                if (sourcePath.Contains("\\"))
+                {
+                    string[] pathParts = sourcePath.Split('\\');
+                    if (pathParts.Length >= 2)
+                    {
+                        string folderPart = pathParts[pathParts.Length - 2]; // Get the folder (2 characters)
+                        string filePart = pathParts[pathParts.Length - 1];  // Get the file part (rest of fileID)
+                        
+                        // Verify the folder is 2 chars
+                        if (folderPart.Length == 2 && filePart.Length > 0)
+                        {
+                            fileID = filePart;
+                        }
+                    }
+                }
+
                 // Skip if source file doesn't exist or is empty
                 if (!File.Exists(sourcePath))
                 {
-                    WriteDetailedLog($"Source file not found: {sourcePath}");
+                    // Get a domain and relativePath from the destinationPath if possible
+                    string domain = "Unknown";
+                    string relativePath = Path.GetFileName(destinationPath);
+                    
+                    // Use LogDetailedInfo to ensure fileID is included
+                    LogDetailedInfo(fileID, sourcePath, relativePath, domain, null, $"Source file not found: {sourcePath}");
                     return false;
                 }
 
@@ -828,22 +851,74 @@ namespace Backup2FS.Core.Services
                 // Format timestamp to match the human-readable format
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 
+                // Extract fileID for missing files
+                string fileID = "";
+                string filePath = "";
+                
+                // Check for special cases where we need to extract fileID
+                if (message.Contains("Source file not found:"))
+                {
+                    // Extract the file path from the message
+                    int startIndex = message.IndexOf("Source file not found:") + "Source file not found:".Length;
+                    
+                    // Find the end of the file path - for paths that end with 'for [domain]/[path]'
+                    int endIndex = message.IndexOf(" for ", startIndex);
+                    if (endIndex > startIndex)
+                    {
+                        filePath = message.Substring(startIndex, endIndex - startIndex).Trim();
+                        
+                        // Extract the FileID from the path - expected format: [backupPath]/[2-char-folder]/[fileID]
+                        // First check if the path follows expected structure with the fileID at the end
+                        if (filePath.Contains("\\"))
+                        {
+                            string[] pathParts = filePath.Split('\\');
+                            if (pathParts.Length >= 2)
+                            {
+                                string folderPart = pathParts[pathParts.Length - 2]; // Get the folder (2 characters)
+                                string filePart = pathParts[pathParts.Length - 1];  // Get the file part (rest of fileID)
+                                
+                                // Verify the folder is 2 chars
+                                if (folderPart.Length == 2 && filePart.Length > 0)
+                                {
+                                    fileID = filePart;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Write a structured log entry with fileID column for missing files
+                    string logEntry = $"{timestamp},{fileID},{message},,,";
+                    lock (_logLock)
+                    {
+                        if (!File.Exists(_detailedLogPath))
+                        {
+                            // Try to recreate the log file if it was deleted
+                            InitializeDetailedLogging();
+                        }
+                        
+                        File.AppendAllText(_detailedLogPath, logEntry + Environment.NewLine);
+                    }
+                    return;
+                }
+                
                 // For system messages, don't include hash values or file copied
                 // Place the message in the FileCopied column
-                string logEntry = $"{timestamp},,{message},,,";
-
+                string defaultLogEntry = $"{timestamp},,{message},,,";
+                
                 lock (_logLock)
                 {
                     if (!File.Exists(_detailedLogPath))
-                        InitializeDetailedLogging();  // Reinitialize if file doesn't exist
-
-                    File.AppendAllText(_detailedLogPath, logEntry + Environment.NewLine);
+                    {
+                        // Try to recreate the log file if it was deleted
+                        InitializeDetailedLogging();
+                    }
+                    
+                    File.AppendAllText(_detailedLogPath, defaultLogEntry + Environment.NewLine);
                 }
             }
             catch (Exception ex)
             {
-                // We can't log the error to the file obviously, so just log to Debug
-                Debug.WriteLine($"Error writing to detailed log: {ex.Message}");
+                LogMessage?.Invoke($"Failed to write to detailed log: {ex.Message}");
             }
         }
 

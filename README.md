@@ -69,6 +69,18 @@ You can configure the hash algorithms used for file verification:
 3. Restore NuGet packages
 4. Build the solution
 
+## Antivirus Notice
+
+Some antivirus software, including Windows Defender on Windows 10, may flag the installer as suspicious (false positive). This is common with software installers and can be safely ignored. The application has been tested and is virus-free. 
+
+Windows Defender on Windows 10 may specifically detect "Trojan:Win32/Wacatac.B!ml", which is a known false positive for Inno Setup installers. If you encounter this warning, you can:
+
+1. Click "More info" and then "Run anyway" 
+2. Add the installer to your antivirus exceptions
+3. Use the portable version instead of the installer
+
+This issue is less common on Windows 11, where the installer typically passes scans without warnings.
+
 ## License
 
 Copyright © 2025 Elusive Data - All Rights Reserved

@@ -726,12 +726,11 @@ namespace Backup2FS.ViewModels
                         if (detailedLogExists)
                         {
                             writer.WriteLine("===== DETAILED FILE LOG =====");
-                            writer.WriteLine("Timestamp,FileID,Domain,RelativePath,Hash,Status");
                             
                             // Read and write the detailed log file content (skipping the header)
                             string[] detailedLogLines = File.ReadAllLines(_backupExtractorService.DetailedLogPath);
-                            // Skip header line if it exists
-                            for (int i = detailedLogLines.Length > 1 ? 1 : 0; i < detailedLogLines.Length; i++)
+                            // Skip the header line - always start from index 1
+                            for (int i = 1; i < detailedLogLines.Length; i++)
                             {
                                 writer.WriteLine(detailedLogLines[i]);
                             }

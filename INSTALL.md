@@ -16,14 +16,14 @@ Before installing Backup2FS, ensure your system meets the following requirements
 
 ### Method 1: Installer Package (Recommended)
 
-1. Download the latest installer package (`Backup2FS_Setup.exe`) from the [Releases](https://github.com/YOUR-USERNAME/Backup2FS/releases) page
+1. Download the latest installer package (`Backup2FS_Setup.exe`) from the [Releases](https://github.com/eichbaumj/Backup2FS/releases) page
 2. Run the installer and follow the on-screen instructions
 3. The application will be installed to your Program Files directory by default
 4. Shortcuts will be created on your desktop and in the Start menu
 
 ### Method 2: Portable ZIP
 
-1. Download the portable ZIP package (`Backup2FS_Portable.zip`) from the [Releases](https://github.com/YOUR-USERNAME/Backup2FS/releases) page
+1. Download the portable ZIP package (`Backup2FS_Portable.zip`) from the [Releases](https://github.com/eichbaumj/Backup2FS/releases) page
 2. Extract the ZIP file to a location of your choice
 3. Run `Backup2FS.exe` directly from the extracted folder
 4. Note: Settings will be saved in the same directory as the executable
@@ -63,7 +63,7 @@ If you prefer to build the application from source:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/YOUR-USERNAME/Backup2FS.git
+   git clone https://github.com/eichbaumj/Backup2FS.git
    ```
 
 2. Open the solution in Visual Studio 2022 or later

@@ -23,7 +23,7 @@ Backup2FS is a Windows application designed to help recover and normalize iOS ba
 
 ## Installation
 
-1. Download the latest release from the [Releases](https://github.com/YOUR-USERNAME/Backup2FS/releases) page
+1. Download the latest release from the [Releases](https://github.com/eichbaumj/Backup2FS/releases) page
 2. Extract the ZIP file to a location of your choice
 3. Run `Backup2FS.exe` to start the application
 
@@ -47,7 +47,7 @@ You can configure the hash algorithms used for file verification:
 
 1. Clone the repository
    ```
-   git clone https://github.com/YOUR-USERNAME/Backup2FS.git
+   git clone https://github.com/eichbaumj/Backup2FS.git
    ```
 2. Open the solution in Visual Studio 2022 or later
 3. Restore NuGet packages

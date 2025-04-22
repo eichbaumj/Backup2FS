@@ -212,6 +212,8 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
@@ -269,43 +271,51 @@
                     </StackPanel>
                 </Border>
                 
+                <!-- Copyright Section -->
+                <Border Grid.Row="2" Background="#1A2C42" Padding="16,20">
+                    <TextBlock Text="© 2025 Elusive Data" 
+                              HorizontalAlignment="Center" 
+                              VerticalAlignment="Center"
+                              FontSize="14"
+                              Foreground="White"/>
+                </Border>
+                
                 <!-- Contact Information Section -->
-                <Border Grid.Row="2" Background="#1A2C42">
-                    <StackPanel VerticalAlignment="Center" Margin="24,32,24,32">
-                        <TextBlock Text="© 2025 Elusive Data" 
-                                  HorizontalAlignment="Center" 
-                                  FontSize="14"
-                                  FontWeight="SemiBold"
-                                  Foreground="White"
-                                  Margin="0,0,0,12"/>
-                        
-                        <TextBlock Text="All Rights Reserved" 
-                                  HorizontalAlignment="Center" 
-                                  FontSize="13"
-                                  Foreground="White"
-                                  Margin="0,0,0,24"/>
-                        
-                        <TextBlock HorizontalAlignment="Center" 
-                                  FontSize="13"
-                                  Foreground="White"
-                                  Margin="0,0,0,8">
-                            <Run Text="www.elusivedata.io"/>
-                            <Run Text=" | "/>
-                            <Run Text="support@elusivedata.io"/>
-                        </TextBlock>
-                    </StackPanel>
+                <Border Grid.Row="3" Background="#1A2C42" Padding="16,20">
+                    <TextBlock HorizontalAlignment="Center" 
+                              VerticalAlignment="Center"
+                              FontSize="13"
+                              Foreground="White">
+                        <Run Text="www.elusivedata.io"/>
+                        <Run Text=" | "/>
+                        <Run Text="support@elusivedata.io"/>
+                    </TextBlock>
+                </Border>
+                
+                <!-- Disclaimer Section -->
+                <Border Grid.Row="4" Background="#333333" Padding="12,12" Margin="0">
+                    <TextBlock Text="DISCLAIMER: This software is provided &quot;as is&quot; without warranty of any kind. Elusive Data is not responsible for the accuracy, completeness, or reliability of any information extracted or processed by this tool. Users should independently verify all results before taking any action based on them. This software is designed as an aid for forensic analysis and is not a substitute for professional judgment or expertise."
+                              HorizontalAlignment="Center" 
+                              TextWrapping="Wrap"
+                              TextAlignment="Center"
+                              FontSize="11"
+                              Foreground="White"
+                              Opacity="0.9"
+                              Margin="8"
+                              VerticalAlignment="Center"/>
                 </Border>
                 
                 <!-- Footer/OK Button -->
-                <Border Grid.Row="3" Background="#F5F5F5" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0">
+                <Border Grid.Row="5" Background="#F5F5F5" Padding="0,8,0,8">
                     <Button Content="OK" 
                            Style="{StaticResource MaterialDesignRaisedButton}"
                            Background="{DynamicResource ElusiveDataOrangeBrush}"
                            Foreground="White"
                            Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
-                           Margin="12"
+                           Margin="0,0,16,0"
                            Width="100"
-                           HorizontalAlignment="Right"/>
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"/>
                 </Border>
             </Grid>
         </DataTemplate>

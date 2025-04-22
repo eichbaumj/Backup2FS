@@ -263,7 +263,7 @@
                               HorizontalAlignment="Center" 
                               Margin="0,8,0,16"/>
                         
-                        <TextBlock Text="iOS Backup Normalizer v1.0" 
+                        <TextBlock Text="iOS Backup Normalizer v2.0.1" 
                                   Foreground="White" 
                                   HorizontalAlignment="Center"
                                   FontSize="16"

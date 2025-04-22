@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Backup2FS.Core.Services
 {
@@ -99,11 +100,61 @@ namespace Backup2FS.Core.Services
                 basePath = "private/var/Other";
             }
             
+            // Sanitize the relative path to remove illegal characters
+            string sanitizedPath = SanitizeFilePath(relativePath);
+            
             // Combine paths and normalize slashes
-            string normalizedPath = relativePath.Replace(':', '/');
+            string normalizedPath = sanitizedPath.Replace(':', '/');
             string fullPath = Path.Combine(basePath, normalizedPath).Replace('\\', '/');
             
             return Path.Combine(outputRootPath, fullPath);
+        }
+
+        /// <summary>
+        /// Sanitizes a file path by removing illegal characters
+        /// </summary>
+        /// <param name="path">The path to sanitize</param>
+        /// <returns>Sanitized path</returns>
+        private static string SanitizeFilePath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return path;
+                
+            // Get the directory part and file name
+            string directoryPath = Path.GetDirectoryName(path);
+            string fileName = Path.GetFileName(path);
+            
+            // If path doesn't have a directory component, just sanitize the filename
+            if (string.IsNullOrEmpty(directoryPath))
+                return SanitizeFileName(fileName);
+                
+            // Otherwise sanitize both parts
+            string sanitizedDirectory = string.Join(
+                Path.DirectorySeparatorChar.ToString(), 
+                directoryPath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                    .Select(SanitizeFileName));
+                    
+            return Path.Combine(sanitizedDirectory, SanitizeFileName(fileName));
+        }
+        
+        /// <summary>
+        /// Sanitizes a file name by removing illegal characters
+        /// </summary>
+        /// <param name="fileName">The file name to sanitize</param>
+        /// <returns>Sanitized file name</returns>
+        private static string SanitizeFileName(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+                return fileName;
+                
+            // Characters that are invalid in Windows filenames
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            
+            // Remove pipe characters (|) which are causing issues with the files
+            // from the examples (also included in invalidChars)
+            
+            // Remove all invalid characters
+            return string.Join("", fileName.Where(c => !invalidChars.Contains(c)));
         }
 
         /// <summary>

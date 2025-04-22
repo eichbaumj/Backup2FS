@@ -40,8 +40,7 @@ Backup2FS is a Windows application designed to help recover and normalize iOS ba
 ## Installation
 
 1. Download the latest release from the [Releases](https://github.com/eichbaumj/Backup2FS/releases) page
-2. Extract the ZIP file to a location of your choice
-3. Run `Backup2FS.exe` to start the application
+2. Run `Backup2FS_Setup.exe` to start the application
 
 ## Usage
 

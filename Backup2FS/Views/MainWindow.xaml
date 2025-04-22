@@ -208,7 +208,7 @@
         
         <!-- Dialog Template for About -->
         <DataTemplate x:Key="AboutDialogTemplate">
-            <Grid Width="500" Height="450">
+            <Grid Width="500" Height="500">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>

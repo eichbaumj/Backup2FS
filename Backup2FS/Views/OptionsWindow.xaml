@@ -1,0 +1,227 @@
+<Window x:Class="Backup2FS.Views.OptionsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        mc:Ignorable="d"
+        Title="Options"
+        Height="480"
+        Width="720"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource SidebarBackgroundBrush}"
+        WindowStyle="SingleBorderWindow">
+
+    <!-- Platform-style dialog chrome: the in-window title row is the caption bar (drag),
+         with a custom close button. -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="48"
+                      ResizeBorderThickness="0"
+                      CornerRadius="0"
+                      GlassFrameThickness="0,0,0,1"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- Sidebar section buttons: soft-orange tint + 3px orange left edge for the
+             selected item (the suite's selection language). -->
+        <Style x:Key="SectionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Padding" Value="20,12"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="bg" Background="{TemplateBinding Background}"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <Rectangle x:Name="edge" Width="3" Fill="{DynamicResource ElusiveDataOrangeBrush}"
+                                       HorizontalAlignment="Left" Visibility="Collapsed"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#22F37934"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SelectedSectionButtonStyle" TargetType="Button" BasedOn="{StaticResource SectionButtonStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource ElusiveDataOrangeBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="bg" Background="#33F37934"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <Rectangle Width="3" Fill="{DynamicResource ElusiveDataOrangeBrush}"
+                                       HorizontalAlignment="Left"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- OK: orange, no red hover (suite language). -->
+        <Style x:Key="OptionsPrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource ElusiveDataOrangeBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryButtonForegroundBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="MinWidth" Value="80"/>
+            <Setter Property="Padding" Value="16,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource SecondaryButtonHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource PressedBackgroundBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Cancel: neutral grey. -->
+        <Style x:Key="OptionsCancelButton" TargetType="Button" BasedOn="{StaticResource OptionsPrimaryButton}">
+            <Setter Property="Background" Value="{DynamicResource SecondaryButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource SecondaryButtonHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource PressedBackgroundBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title / caption bar -->
+        <Border Grid.Row="0" Background="{DynamicResource RibbonGradientBrush}"
+                BorderThickness="0,0,0,1" BorderBrush="{DynamicResource BorderBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <materialDesign:PackIcon Kind="Settings" Width="18" Height="18"
+                                             Foreground="{DynamicResource ElusiveDataOrangeBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text="Options" FontSize="16" FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryTextBrush}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <!-- Close = Cancel (discard unsaved changes) -->
+                <Button Grid.Column="1" Click="CancelButton_Click" ToolTip="Close"
+                        Width="46" Height="48" Background="Transparent" BorderThickness="0"
+                        Foreground="{DynamicResource PrimaryTextBrush}"
+                        WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bg" Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bg" Property="Background" Value="#EE3D53"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <materialDesign:PackIcon Kind="WindowClose" Width="16" Height="16"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Body: sidebar + content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left sidebar with orange section selectors -->
+            <Border Grid.Column="0" Background="{DynamicResource RibbonGradientBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+                <StackPanel Margin="0,20,0,0">
+                    <Button x:Name="GeneralButton" Content="General"
+                            Style="{StaticResource SelectedSectionButtonStyle}"
+                            Click="SectionButton_Click" Tag="General"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Content -->
+            <Border Grid.Column="1" Background="{DynamicResource ContentBackgroundBrush}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="GeneralContent" Margin="28,24,28,24">
+                        <TextBlock Text="Hash Algorithms" Style="{StaticResource ElusiveDataSectionHeader}"/>
+                        <TextBlock Text="Select which hash algorithms are computed for each file during normalization."
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap" Margin="0,4,0,18"/>
+
+                        <CheckBox Content="MD5" Style="{StaticResource ThemeAwareCheckBoxStyle}"
+                                  IsChecked="{Binding UsesMD5, Mode=TwoWay}" Margin="0,0,0,12"/>
+                        <CheckBox Content="SHA-1" Style="{StaticResource ThemeAwareCheckBoxStyle}"
+                                  IsChecked="{Binding UsesSHA1, Mode=TwoWay}" Margin="0,0,0,12"/>
+                        <CheckBox Content="SHA-256" Style="{StaticResource ThemeAwareCheckBoxStyle}"
+                                  IsChecked="{Binding UsesSHA256, Mode=TwoWay}" Margin="0,0,0,12"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Bottom buttons -->
+        <Border Grid.Row="2" Background="{DynamicResource SidebarBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,15">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="OkButton" Content="OK" Click="OkButton_Click"
+                        Style="{StaticResource OptionsPrimaryButton}" Margin="0,0,10,0"/>
+                <Button x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click"
+                        Style="{StaticResource OptionsCancelButton}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

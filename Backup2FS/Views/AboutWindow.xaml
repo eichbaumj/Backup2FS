@@ -1,0 +1,181 @@
+<Window x:Class="Backup2FS.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        mc:Ignorable="d"
+        Title="About Backup2FS"
+        Height="500"
+        Width="450"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource WindowBackgroundBrush}">
+
+    <!-- Platform-style dialog chrome: the gradient banner is the caption bar. -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="170"
+                      ResizeBorderThickness="0"
+                      CornerRadius="0"
+                      GlassFrameThickness="0,0,0,1"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- About OK button: orange, no red hover (suite language). -->
+        <Style x:Key="AboutPrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource ElusiveDataOrangeBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryButtonForegroundBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="MinWidth" Value="100"/>
+            <Setter Property="Padding" Value="20,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource SecondaryButtonHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource PressedBackgroundBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{DynamicResource ContentBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="170"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header banner (brand red/orange gradient) -->
+        <Border Grid.Row="0" Background="{DynamicResource AboutHeaderGradientBrush}">
+            <Grid>
+                <StackPanel VerticalAlignment="Center">
+                    <Image Source="pack://application:,,,/Resources/Images/Vertical_Logo.png"
+                           Height="100"
+                           Margin="0,10,0,8"
+                           HorizontalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock Text="Build: 3.0"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               HorizontalAlignment="Center"
+                               Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Window close (no stock title bar). Dark hover; banner is already red/orange. -->
+                <Button Click="OkButton_Click" ToolTip="Close"
+                        Width="40" Height="34" Background="Transparent" BorderThickness="0"
+                        Foreground="White"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bg" Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bg" Property="Background" Value="#44000000"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <materialDesign:PackIcon Kind="WindowClose" Width="16" Height="16"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Main content -->
+        <StackPanel Grid.Row="1" Margin="40,22,40,20">
+            <TextBlock Text="iOS Backup Normalizer for Forensic Analysis"
+                       FontSize="13"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,16"/>
+
+            <TextBlock Text="Copyright © 2025 Collara Works AB, trading as Elusive Data"
+                       FontSize="13"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,3"/>
+            <TextBlock Text="All Rights Reserved"
+                       FontSize="13"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,20"/>
+
+            <!-- Contact -->
+            <Grid HorizontalAlignment="Center" Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Sweden: "
+                           FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="+46 076 009 7189"
+                           FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="USA: "
+                           FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,3,0,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="+1 209 217 2866"
+                           FontSize="13" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,3,0,0"/>
+            </Grid>
+
+            <TextBlock HorizontalAlignment="Center" Margin="0,0,0,5">
+                <Hyperlink NavigateUri="mailto:support@elusivedata.io"
+                           RequestNavigate="Hyperlink_RequestNavigate"
+                           Foreground="{DynamicResource ElusiveDataSkyBlueBrush}"
+                           TextDecorations="Underline">
+                    <TextBlock Text="support@elusivedata.io" FontSize="13"/>
+                </Hyperlink>
+            </TextBlock>
+
+            <TextBlock HorizontalAlignment="Center">
+                <Hyperlink NavigateUri="https://www.elusivedata.io"
+                           RequestNavigate="Hyperlink_RequestNavigate"
+                           Foreground="{DynamicResource ElusiveDataSkyBlueBrush}"
+                           TextDecorations="Underline">
+                    <TextBlock Text="www.elusivedata.io" FontSize="13"/>
+                </Hyperlink>
+            </TextBlock>
+        </StackPanel>
+
+        <!-- Bottom button -->
+        <Border Grid.Row="2" Padding="20,15">
+            <Button x:Name="OkButton"
+                    Content="OK"
+                    Style="{StaticResource AboutPrimaryButton}"
+                    HorizontalAlignment="Center"
+                    Click="OkButton_Click"/>
+        </Border>
+    </Grid>
+</Window>

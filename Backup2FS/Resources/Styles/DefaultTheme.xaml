@@ -1,0 +1,354 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+    ========================================
+    DEFAULT THEME (Elusive Data Branded)
+    ========================================
+    This theme maintains the original Elusive Data brand colors
+    with blue backgrounds and orange/red accents.
+    -->
+
+    <!-- Primary Brand Colors -->
+    <Color x:Key="ElusiveDataDarkBlue">#162535</Color>
+    <Color x:Key="ElusiveDataBlue">#21354D</Color>
+    <Color x:Key="ElusiveDataRed">#EE3D53</Color>
+    <Color x:Key="ElusiveDataOrange">#F37934</Color>
+    <Color x:Key="ElusiveDataSkyBlue">#87CEEB</Color>
+    <Color x:Key="ElusiveDataCommitGreen">#4CAF50</Color>
+    <Color x:Key="ElusiveDataLightGray">#E0E0E0</Color>
+    <Color x:Key="ElusiveDataMenuBackground">#2C2C2C</Color>
+
+    <!-- Solid Color Brushes -->
+    <SolidColorBrush x:Key="ElusiveDataDarkBlueBrush" Color="{StaticResource ElusiveDataDarkBlue}" />
+    <SolidColorBrush x:Key="ElusiveDataBlueBrush" Color="{StaticResource ElusiveDataBlue}" />
+    <SolidColorBrush x:Key="ElusiveDataRedBrush" Color="{StaticResource ElusiveDataRed}" />
+    <SolidColorBrush x:Key="ElusiveDataOrangeBrush" Color="{StaticResource ElusiveDataOrange}" />
+    <SolidColorBrush x:Key="ElusiveDataSkyBlueBrush" Color="{StaticResource ElusiveDataSkyBlue}" />
+    <SolidColorBrush x:Key="ElusiveDataCommitGreenBrush" Color="{StaticResource ElusiveDataCommitGreen}" />
+    <SolidColorBrush x:Key="ElusiveDataLightGrayBrush" Color="{StaticResource ElusiveDataLightGray}" />
+    <SolidColorBrush x:Key="ElusiveDataMenuBackgroundBrush" Color="{StaticResource ElusiveDataMenuBackground}" />
+
+    <!-- Window and Panel Backgrounds -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#162535" />
+    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#21354D" />
+    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#142A40" />
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#21354D" />
+    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#121E2B" />
+
+    <!-- Text Colors -->
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="White" />
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#CCCCCC" />
+    <SolidColorBrush x:Key="DisabledTextBrush" Color="#666666" />
+    <SolidColorBrush x:Key="AccentTextBrush" Color="#F37934" />
+
+    <!-- Overlay-specific Text Colors (always light for dark overlay) -->
+    <SolidColorBrush x:Key="OverlayPrimaryTextBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlaySecondaryTextBrush" Color="#CCCCCC" />
+
+    <!-- UI Element Colors -->
+    <SolidColorBrush x:Key="BorderBrush" Color="#444444" />
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#18293A" />
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#666666" />
+    <SolidColorBrush x:Key="HoverBackgroundBrush" Color="#3A6186" />
+    <SolidColorBrush x:Key="PressedBackgroundBrush" Color="#2C486A" />
+    <SolidColorBrush x:Key="SelectionBackgroundBrush" Color="#1976D2" /><!-- Blue matching WAL frame header -->
+
+    <!-- DataGrid Colors -->
+    <SolidColorBrush x:Key="DataGridBackgroundBrush" Color="#18293A" />
+    <SolidColorBrush x:Key="DataGridRowBackgroundBrush" Color="#1E2D36" />
+    <SolidColorBrush x:Key="DataGridAlternatingRowBackgroundBrush" Color="#253540" />
+    <SolidColorBrush x:Key="DataGridHeaderBackgroundBrush" Color="#21354D" />
+    <SolidColorBrush x:Key="DataGridSelectionBackgroundBrush" Color="#2C486A" />
+
+    <!-- Button-specific Colors -->
+    <SolidColorBrush x:Key="SecondaryButtonBackgroundBrush" Color="#2C486A" />
+    <SolidColorBrush x:Key="SecondaryButtonHoverBrush" Color="#3C5980" />
+
+    <!-- Button Foreground Colors -->
+    <SolidColorBrush x:Key="PrimaryButtonForegroundBrush" Color="White" />
+    <SolidColorBrush x:Key="SecondaryButtonForegroundBrush" Color="White" />
+    <SolidColorBrush x:Key="ChatHeaderIconBrush" Color="White" />
+
+    <!-- Dialog Accent Colors -->
+    <SolidColorBrush x:Key="SuccessDialogAccentBrush" Color="#5BC0DE" />
+
+    <!-- Special Panel Colors -->
+    <SolidColorBrush x:Key="ToolbarBackgroundBrush" Color="#1E2D36" />
+    <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#121E2B" />
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#121E2B" />
+    <SolidColorBrush x:Key="FilterToolbarBackgroundBrush" Color="#233547" />
+
+    <!-- Progress and Status Colors -->
+    <SolidColorBrush x:Key="ProgressBackgroundBrush" Color="#333333" />
+    <SolidColorBrush x:Key="ProgressForegroundBrush" Color="#00CC00" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#4CAF50" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#F37934" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="#EE3D53" />
+    <SolidColorBrush x:Key="InfoBrush" Color="#87CEEB" />
+
+    <!-- Relationship Line Colors -->
+    <SolidColorBrush x:Key="RelationshipLineBrush" Color="{StaticResource ElusiveDataSkyBlue}" />
+
+    <!-- XML Syntax Highlighting Colors -->
+    <SolidColorBrush x:Key="XmlTagBrush" Color="#F37934" /><!-- Orange for tags -->
+    <SolidColorBrush x:Key="XmlAttributeNameBrush" Color="#87CEEB" /><!-- Sky Blue for attribute names -->
+    <SolidColorBrush x:Key="XmlAttributeValueBrush" Color="#EE3D53" /><!-- Red for attribute values -->
+    <SolidColorBrush x:Key="XmlCommentBrush" Color="#808080" /><!-- Gray for comments -->
+    <SolidColorBrush x:Key="XmlCDataBrush" Color="#9370DB" /><!-- Medium Purple for CDATA -->
+
+    <!-- WAL Frame Card Colors (Default Theme - Original Blue) -->
+    <!-- Regular (non-commit) frames are deliberately muted slate so the semantic
+         colors carry the meaning: emerald = commit, orange = chain break / slack,
+         red = invalid checksum, orange ring = selected. -->
+    <LinearGradientBrush x:Key="WalFrameHeaderBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#3D5A77" Offset="0"/>
+        <GradientStop Color="#33495E" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WalFrameBodyBrush" Color="#22364A" />
+    <SolidColorBrush x:Key="WalFrameContentBrush" Color="#1E3A50" />
+    <SolidColorBrush x:Key="WalFrameBorderBrush" Color="#3A4F66" />
+    <!-- Commit-frame header (transaction boundary). Emerald on purpose: orange and
+         red are reserved for checksum/chain-break validation flags on WAL frames. -->
+    <LinearGradientBrush x:Key="WalFrameCommitHeaderBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#1E8A5F" Offset="0"/>
+        <GradientStop Color="#15694A" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WalFrameLabelBrush" Color="#CCCCCC" />
+    <SolidColorBrush x:Key="WalFrameValueBrush" Color="White" />
+
+    <!-- Freelist Card Colors (Default Theme - Blue) -->
+    <!-- Muted slate, matching the WAL frame cards: accent colors are reserved for
+         status (orange selection ring, validation flags). -->
+    <LinearGradientBrush x:Key="FreelistCardHeaderBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#3D5A77" Offset="0"/>
+        <GradientStop Color="#33495E" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="FreelistCardBodyBrush" Color="#27425C" />
+    <SolidColorBrush x:Key="FreelistCardBorderBrush" Color="#304050" />
+    <SolidColorBrush x:Key="FreelistCardTableNameBrush" Color="White" />
+    <SolidColorBrush x:Key="FreelistCardLabelBrush" Color="#CCCCCC" />
+    <SolidColorBrush x:Key="FreelistCardValueBrush" Color="White" />
+
+    <!-- Journal Card Colors (Default Theme - Blue, matches WAL) -->
+    <SolidColorBrush x:Key="JournalCardHeaderBrush" Color="#1976D2" />
+    <SolidColorBrush x:Key="JournalCardBodyBrush" Color="#1565C0" />
+    <SolidColorBrush x:Key="JournalCardContentBrush" Color="#1E3A50" />
+    <SolidColorBrush x:Key="JournalCardBorderBrush" Color="#0D47A1" />
+    <SolidColorBrush x:Key="JournalCardHoverBrush" Color="#2A4A60" />
+    <SolidColorBrush x:Key="JournalCardLabelBrush" Color="#CCCCCC" />
+    <SolidColorBrush x:Key="JournalCardValueBrush" Color="White" />
+
+    <!-- Trunk Card Colors (Default Theme - Blue) -->
+    <SolidColorBrush x:Key="TrunkCardBackgroundBrush" Color="#1E3A50" />
+    <SolidColorBrush x:Key="TrunkListItemHoverBrush" Color="#1E3A50" />
+    <SolidColorBrush x:Key="TrunkListItemSelectedBrush" Color="#2C486A" />
+
+    <!-- Timeline Graph Colors (Default Theme - Dark Blue) -->
+    <SolidColorBrush x:Key="TimelineWindowBackgroundBrush" Color="#162535" />
+    <SolidColorBrush x:Key="TimelinePlotBackgroundBrush" Color="#233547" />
+    <SolidColorBrush x:Key="TimelinePlotTextBrush" Color="White" />
+    <SolidColorBrush x:Key="TimelinePlotGridBrush" Color="#788A9C" />
+    <!-- Muted steel for "no loss" bars so the Elusive-red record-drop bars carry
+         the forensic signal -->
+    <SolidColorBrush x:Key="TimelineBarBlueBrush" Color="#5E8CB8" />
+    <SolidColorBrush x:Key="TimelineBarRedBrush" Color="#EE3D53" />
+    <SolidColorBrush x:Key="TimelineBarGrayBrush" Color="#888888" />
+
+    <!-- Gradient Brushes -->
+    <LinearGradientBrush x:Key="ElusiveDataHeaderGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="{StaticResource ElusiveDataRed}" Offset="0.0" />
+        <GradientStop Color="{StaticResource ElusiveDataOrange}" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- About Dialog Header Gradient - Brand red/orange for Default theme -->
+    <LinearGradientBrush x:Key="AboutHeaderGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="{StaticResource ElusiveDataRed}" Offset="0.0" />
+        <GradientStop Color="{StaticResource ElusiveDataOrange}" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Ribbon/Header Bar Gradient - Original Professional Look -->
+    <LinearGradientBrush x:Key="RibbonGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#000000" Offset="0.0" />
+        <GradientStop Color="#121E2B" Offset="0.5" />
+        <GradientStop Color="#142A40" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Main Splash Screen Background Gradient - Original Professional Look -->
+    <LinearGradientBrush x:Key="SplashScreenGradientBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#000000" Offset="0.0" />
+        <GradientStop Color="#121E2B" Offset="0.5" />
+        <GradientStop Color="#142A40" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Legacy gradients (kept for backward compatibility) -->
+    <LinearGradientBrush x:Key="MainScreenGradientBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#000000" Offset="0.0" />
+        <GradientStop Color="#121E2B" Offset="0.5" />
+        <GradientStop Color="#142A40" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="HeaderGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#000000" Offset="0.0" />
+        <GradientStop Color="#121E2B" Offset="0.5" />
+        <GradientStop Color="#142A40" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Ribbon/Icon Colors -->
+    <SolidColorBrush x:Key="RibbonForegroundBrush" Color="White" />
+    <!-- Toolbar divider - white-alpha reads well on the dark right side of the ribbon -->
+    <SolidColorBrush x:Key="RibbonDividerBrush" Color="#33FFFFFF" />
+
+    <!-- Splash Screen Element Colors -->
+    <SolidColorBrush x:Key="SplashTextBrush" Color="White" />
+    <SolidColorBrush x:Key="SplashIconBrush" Color="#666666" />
+
+    <!-- Main Screen Button Gradient - Brand gradient -->
+    <LinearGradientBrush x:Key="MainScreenButtonGradient" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="{StaticResource ElusiveDataRed}" Offset="0.0" />
+        <GradientStop Color="{StaticResource ElusiveDataOrange}" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Button Hover Gradient - Lighter version of main gradient -->
+    <LinearGradientBrush x:Key="MainScreenButtonHoverGradient" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#FF5D73" Offset="0.0" />
+        <GradientStop Color="#FF9954" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- ScrollBar Styles - Commented out to use WPF defaults for proper functionality -->
+    <!-- The custom styles were causing inverted scrolling behavior -->
+    <!--
+    <SolidColorBrush x:Key="ScrollBarTrackBrush" Color="#1A2533" />
+    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#4A5A6A" />
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#5A6A7A" />
+
+    <Style TargetType="{x:Type ScrollBar}">
+        <Setter Property="Background" Value="{StaticResource ScrollBarTrackBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ScrollBar}">
+                    <Grid>
+                        <Border Background="{TemplateBinding Background}"/>
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Style>
+                                        <Style TargetType="{x:Type Thumb}">
+                                            <Setter Property="Background" Value="{StaticResource ScrollBarThumbBrush}"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="{x:Type Thumb}">
+                                                        <Border Background="{TemplateBinding Background}" CornerRadius="4"/>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource ScrollBarThumbHoverBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Thumb.Style>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    -->
+
+    <!-- B-Tree Visualizer Page Type Colors (aligned with Elusive Data brand) -->
+    <SolidColorBrush x:Key="BTreeSchemaRootBrush" Color="#F37934"/>
+    <SolidColorBrush x:Key="BTreeInteriorTableBrush" Color="#F37934"/>
+    <SolidColorBrush x:Key="BTreeLeafTableBrush" Color="#4CAF50"/>
+    <SolidColorBrush x:Key="BTreeInteriorIndexBrush" Color="#87CEEB"/>
+    <SolidColorBrush x:Key="BTreeLeafIndexBrush" Color="#1976D2"/>
+    <SolidColorBrush x:Key="BTreeFreelistTrunkBrush" Color="#EE3D53"/>
+    <SolidColorBrush x:Key="BTreeFreelistLeafBrush" Color="#EE3D53"/>
+    <SolidColorBrush x:Key="BTreeOverflowBrush" Color="#5DA9C8"/>
+    <SolidColorBrush x:Key="BTreePointerMapBrush" Color="#64748B"/>
+    <SolidColorBrush x:Key="BTreeUnknownBrush" Color="#4A5568"/>
+
+    <!-- ============================================================= -->
+    <!-- Clario landing - module colors & card surface (theme-aware)    -->
+    <!-- ============================================================= -->
+
+    <!-- Module accent colors (brand identity - constant across themes) -->
+    <SolidColorBrush x:Key="ModuleSqliteBrush"  Color="#3B82F6"/>
+    <SolidColorBrush x:Key="ModuleLevelDbBrush" Color="#F37934"/>
+    <!-- RealmDB: gradient sphere echoing the Realm logo (sunset top -> indigo base) -->
+    <LinearGradientBrush x:Key="ModuleRealmBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0.0"  Color="#F6A47B"/>
+        <GradientStop Offset="0.28" Color="#EE6FA0"/>
+        <GradientStop Offset="0.52" Color="#C9447F"/>
+        <GradientStop Offset="0.74" Color="#7E51A8"/>
+        <GradientStop Offset="1.0"  Color="#45568F"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="ModuleIndexedBrush" Color="#F8A055"/>
+    <SolidColorBrush x:Key="ModulePlistBrush"   Color="#4ADE80"/>
+    <SolidColorBrush x:Key="ModuleXmlBrush"     Color="#FACC15"/>
+    <SolidColorBrush x:Key="ModuleJsonBrush"  Color="#2DD4BF"/>
+    <SolidColorBrush x:Key="ModuleHexBrush"     Color="#F43F5E"/>
+    <SolidColorBrush x:Key="ModuleSegbBrush"    Color="#C2C8D0"/>  <!-- Mac aluminium silver -->
+
+    <!-- Soft chip tints: identical two-stop gradient treatment for every module
+         (lit at the top, fading down) so all eight tiles share one luminance band. -->
+    <LinearGradientBrush x:Key="ModuleSqliteSoftBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#383B82F6" Offset="0"/><GradientStop Color="#143B82F6" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ModuleLevelDbSoftBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#38F37934" Offset="0"/><GradientStop Color="#14F37934" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ModuleRealmSoftBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#38A855F7" Offset="0"/><GradientStop Color="#14A855F7" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ModuleIndexedSoftBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#38F8A055" Offset="0"/><GradientStop Color="#14F8A055" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ModulePlistSoftBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#384ADE80" Offset="0"/><GradientStop Color="#144ADE80" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ModuleXmlSoftBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#38FACC15" Offset="0"/><GradientStop Color="#14FACC15" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ModuleJsonSoftBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#382DD4BF" Offset="0"/><GradientStop Color="#142DD4BF" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ModuleHexSoftBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#38F43F5E" Offset="0"/><GradientStop Color="#14F43F5E" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ModuleSegbSoftBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#38C2C8D0" Offset="0"/><GradientStop Color="#14C2C8D0" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Splash backdrop: barely-there vertical grade so the area around the landing
+         panel has depth instead of reading as flat fill. -->
+    <LinearGradientBrush x:Key="SplashBackdropBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#1C2C42" Offset="0"/>
+        <GradientStop Color="#162535" Offset="0.45"/>
+        <GradientStop Color="#101B28" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Faint dot grid for the schema diagram canvas — signals a pannable/zoomable
+         workspace. Lives on the in-canvas background rect, so it pans and zooms
+         with the table cards. -->
+    <DrawingBrush x:Key="CanvasDotGridBrush" TileMode="Tile" Viewport="0,0,28,28" ViewportUnits="Absolute" Stretch="None">
+        <DrawingBrush.Drawing>
+            <GeometryDrawing Brush="#17FFFFFF">
+                <GeometryDrawing.Geometry>
+                    <EllipseGeometry Center="14,14" RadiusX="1.2" RadiusY="1.2"/>
+                </GeometryDrawing.Geometry>
+            </GeometryDrawing>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+
+    <!-- Module card surface (subtle vertical gradient) -->
+    <LinearGradientBrush x:Key="ModuleCardGradientBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#1B2D42" Offset="0.0"/>
+        <GradientStop Color="#142233" Offset="1.0"/>
+    </LinearGradientBrush>
+
+</ResourceDictionary>

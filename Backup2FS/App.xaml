@@ -10,29 +10,20 @@
             <ResourceDictionary.MergedDictionaries>
                 <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepOrange" SecondaryColor="Red" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+                <!-- Shared Clario / Elusive Data design system (palette must come before the styles
+                     that StaticResource-reference it). -->
+                <ResourceDictionary Source="/Resources/Styles/DefaultTheme.xaml" />
+                <ResourceDictionary Source="/Resources/Styles/ElusiveDataStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            
+
             <!-- Value Converters -->
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
             <converters:BooleanToPlayPauseIconConverter x:Key="BooleanToPlayPauseIconConverter" />
             <converters:BooleanToPauseResumeTextConverter x:Key="BooleanToPauseResumeTextConverter" />
-            
-            <!-- Improved Elusive Data Brand Colors -->
-            <Color x:Key="ElusiveDataDarkBlue">#162535</Color>
-            <Color x:Key="ElusiveDataBlue">#21354D</Color>
-            <Color x:Key="ElusiveDataRed">#EE3D53</Color>
-            <Color x:Key="ElusiveDataOrange">#F37934</Color>
-            <Color x:Key="ElusiveDataLightGray">#E0E0E0</Color>
-            <Color x:Key="ElusiveDataMenuBackground">#2C2C2C</Color>
-            
-            <SolidColorBrush x:Key="ElusiveDataDarkBlueBrush" Color="{StaticResource ElusiveDataDarkBlue}" />
-            <SolidColorBrush x:Key="ElusiveDataBlueBrush" Color="{StaticResource ElusiveDataBlue}" />
-            <SolidColorBrush x:Key="ElusiveDataRedBrush" Color="{StaticResource ElusiveDataRed}" />
-            <SolidColorBrush x:Key="ElusiveDataOrangeBrush" Color="{StaticResource ElusiveDataOrange}" />
-            <SolidColorBrush x:Key="ElusiveDataLightGrayBrush" Color="{StaticResource ElusiveDataLightGray}" />
-            <SolidColorBrush x:Key="ElusiveDataMenuBackgroundBrush" Color="{StaticResource ElusiveDataMenuBackground}" />
-            
+
+            <!-- Brand colors/brushes now live in Resources/Styles/DefaultTheme.xaml (shared suite palette). -->
+
             <!-- Override Material Design Colors with Elusive Data Branding -->
             <SolidColorBrush x:Key="PrimaryHueDarkBrush" Color="{StaticResource ElusiveDataOrange}" />
             <SolidColorBrush x:Key="PrimaryHueMidBrush" Color="{StaticResource ElusiveDataOrange}" />

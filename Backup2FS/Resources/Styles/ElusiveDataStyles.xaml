@@ -3,20 +3,113 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
 
-    <!-- Define colors locally in this file -->
-    <Color x:Key="ElusiveDataDarkBlue">#162535</Color>
-    <Color x:Key="ElusiveDataBlue">#21354D</Color>
-    <Color x:Key="ElusiveDataRed">#EE3D53</Color>
-    <Color x:Key="ElusiveDataOrange">#F37934</Color>
-    <Color x:Key="ElusiveDataLightGray">#E0E0E0</Color>
-    <Color x:Key="ElusiveDataMenuBackground">#2C2C2C</Color>
-    
-    <SolidColorBrush x:Key="ElusiveDataDarkBlueBrush" Color="{StaticResource ElusiveDataDarkBlue}" />
-    <SolidColorBrush x:Key="ElusiveDataBlueBrush" Color="{StaticResource ElusiveDataBlue}" />
-    <SolidColorBrush x:Key="ElusiveDataRedBrush" Color="{StaticResource ElusiveDataRed}" />
-    <SolidColorBrush x:Key="ElusiveDataOrangeBrush" Color="{StaticResource ElusiveDataOrange}" />
-    <SolidColorBrush x:Key="ElusiveDataLightGrayBrush" Color="{StaticResource ElusiveDataLightGray}" />
-    <SolidColorBrush x:Key="ElusiveDataMenuBackgroundBrush" Color="{StaticResource ElusiveDataMenuBackground}" />
+    <!--
+    ========================================
+    ELUSIVE DATA STYLES
+    ========================================
+    This file contains all button, control, and UI element styles.
+    Colors are now dynamically provided by theme files:
+    - DefaultTheme.xaml (branded blue theme)
+    - DarkTheme.xaml (high-contrast dark)
+    - LightTheme.xaml (professional light)
+
+    All color keys reference the currently loaded theme.
+    ========================================
+    -->
+
+    <!-- Gradient brush for table headers -->
+    <LinearGradientBrush x:Key="ElusiveDataHeaderGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="{StaticResource ElusiveDataRed}" Offset="0.0" />
+        <GradientStop Color="{StaticResource ElusiveDataOrange}" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!--
+    ========================================
+    SUITE-STANDARD CONTENT TAB
+    ========================================
+    Canonical tab look for every content TabControl in the suite (SQLite
+    Analyzer's Database/WAL/Journal/Freelist tabs, the JSON / Plist viewers,
+    and any future viewer). On selection a tab gets an orange highlight fill
+    plus a 2px orange bottom border, and its label + icon recolor to orange;
+    hover shows a lighter orange tint. Foreground is inherited so the icon and
+    text recolor together.
+
+    Apply directly (Style="{StaticResource ContentTabItem}") OR, when a
+    TabControl needs per-tab sub-styles, declare an implicit TabItem style
+    BasedOn this key inside that control's resources so bare tabs pick it up.
+    -->
+    <Style x:Key="ContentTabItem" TargetType="TabItem">
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="TabBorder"
+                            Background="Transparent"
+                            BorderThickness="0,0,0,2"
+                            BorderBrush="Transparent"
+                            Padding="16,8"
+                            Cursor="Hand">
+                        <ContentPresenter ContentSource="Header"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource ElusiveDataOrangeBrush}"/>
+                            <Setter TargetName="TabBorder" Property="Background" Value="#33F37934"/>
+                            <Setter Property="Foreground" Value="{DynamicResource ElusiveDataOrangeBrush}"/>
+                        </Trigger>
+                        <!-- Hover tint only on UNselected tabs — applying it to the selected tab fought the
+                             IsSelected background (#33 ↔ #22) and made the active tab flicker on mouse move. -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsSelected" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="TabBorder" Property="Background" Value="#22F37934"/>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+    ========================================
+    FORENSIC STATUS BRUSHES (P2C-05)
+    ========================================
+    Single canonical color set for the forensic record-status columns
+    (CommitStatus + StatusText) used in Recovered WAL Records, Recovered
+    Freelist Records, and any future status grids. Per the brand spec:
+
+      Active            green   (currently committed)
+      Staged            sky blue (will commit on checkpoint)
+      Inactive          gray    (older session / superseded)
+      Freelist          sky blue (recovered from freelist — same blue band as Staged)
+      Orphaned          amber   (older session — page reachable but not current)
+      PendingUpdate     orange  (DB record will be modified on commit)
+      PendingDeletion   red     (DB record will be removed on commit)
+      Deleted           red     (record was intentionally deleted in WAL)
+
+    Defined as static resources so Window.Resources don't need to redeclare
+    them. The underlying ElusiveData* color resources are theme-aware (each
+    of DefaultTheme/DarkTheme/LightTheme provides its own palette), so these
+    brushes pick up the active theme at parse time.
+    ========================================
+    -->
+    <SolidColorBrush x:Key="ForensicActiveBrush" Color="{StaticResource ElusiveDataCommitGreen}" />
+    <SolidColorBrush x:Key="ForensicStagedBrush" Color="{StaticResource ElusiveDataSkyBlue}" />
+    <SolidColorBrush x:Key="ForensicInactiveBrush" Color="#CCCCCC" />
+    <SolidColorBrush x:Key="ForensicFreelistBrush" Color="{StaticResource ElusiveDataSkyBlue}" />
+    <SolidColorBrush x:Key="ForensicOrphanedBrush" Color="#FFC107" />
+    <SolidColorBrush x:Key="ForensicPendingUpdateBrush" Color="{StaticResource ElusiveDataOrange}" />
+    <SolidColorBrush x:Key="ForensicPendingDeletionBrush" Color="{StaticResource ElusiveDataRed}" />
+    <SolidColorBrush x:Key="ForensicDeletedBrush" Color="{StaticResource ElusiveDataRed}" />
 
     <!-- Button Styles -->
     <Style x:Key="ElusiveDataPrimaryButton" TargetType="{x:Type Button}" BasedOn="{StaticResource MaterialDesignRaisedButton}">
@@ -29,8 +122,8 @@
         <Setter Property="FontWeight" Value="SemiBold" />
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="{StaticResource ElusiveDataRedBrush}" />
-                <Setter Property="BorderBrush" Value="{StaticResource ElusiveDataRedBrush}" />
+                <Setter Property="Background" Value="{DynamicResource SecondaryButtonHoverBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource SecondaryButtonHoverBrush}" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.6" />
@@ -57,13 +150,642 @@
         </Style.Triggers>
     </Style>
 
+    <!-- ============================================================= -->
+    <!-- Ribbon / custom window-chrome buttons (borderless title bar)   -->
+    <!-- Ported from the suite MainWindow so the brand ribbon is shared.-->
+    <!-- ============================================================= -->
+
+    <!-- Header icon button (40x40, transparent, soft hover) -->
+    <Style x:Key="HeaderButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Margin" Value="8,0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource RibbonForegroundBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="3">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource PressedBackgroundBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Window caption buttons (min/max) - full 60px ribbon height -->
+    <Style x:Key="CaptionButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="46"/>
+        <Setter Property="Height" Value="60"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{DynamicResource RibbonForegroundBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bg" Background="{TemplateBinding Background}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bg" Property="Background" Value="#14FFFFFF"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bg" Property="Background" Value="#22FFFFFF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Close button hovers brand red -->
+    <Style x:Key="CaptionCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bg" Background="{TemplateBinding Background}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bg" Property="Background" Value="#EE3D53"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bg" Property="Background" Value="#C73247"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- WAL-Specific Button Styles for Unified Interface -->
+
+    <!-- Primary WAL Action Button (for major actions like "Analyze WAL Frames") -->
+    <Style x:Key="ElusiveDataWalPrimaryButton" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{StaticResource ElusiveDataOrangeBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinWidth" Value="160" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource SecondaryButtonHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource PressedBackgroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="#80FFFFFF"/>
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Toolbar Summary Button (prominent but smaller than primary) -->
+    <Style x:Key="ElusiveDataWalSummaryButton" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{StaticResource ElusiveDataOrangeBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Width" Value="120" />
+        <Setter Property="Padding" Value="12,4" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource SecondaryButtonHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Secondary Action Buttons (Remove Duplicates, Export, etc.) -->
+    <!-- Height matches ElusiveDataWalSummaryButton (28) so toolbar rows line up. -->
+    <Style x:Key="ElusiveDataWalSecondaryButton" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{DynamicResource SecondaryButtonBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="12,4" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource SecondaryButtonHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Add to Table View Button (bottom toolbar primary action) -->
+    <Style x:Key="ElusiveDataWalAddTableButton" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{StaticResource ElusiveDataOrangeBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Margin" Value="10" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource SecondaryButtonHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Main Toolbar Secondary Button (Validate, Graph, Hex Viewer, etc.) -->
+    <Style x:Key="ElusiveDataMainToolbarButton" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="#2C486A" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinWidth" Value="80" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="#3C5980"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="#1C3950"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="#80FFFFFF"/>
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Small Filter Buttons (Apply, Clear Filters) -->
+    <Style x:Key="ElusiveDataFilterButton" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="#2C486A" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="#3C5980"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="#1C3950"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="#80FFFFFF"/>
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Icon-Only Toolbar Buttons - Visible background with hover -->
+    <Style x:Key="ElusiveDataIconButton" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{DynamicResource SecondaryButtonBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Width" Value="48" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource AccentTextBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Compact Icon Button for toolbars with limited space - Visible background -->
+    <Style x:Key="ElusiveDataCompactIconButton" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{DynamicResource SecondaryButtonBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource SecondaryButtonHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource PressedBackgroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Icon toggle for toolbar display options (e.g. Hide Empty Columns).
+         Sized and colored to sit flush with ElusiveDataWalSecondaryButton in a
+         toolbar row: same 28px height, same dark body. Active state = orange
+         icon + subtle orange border (a solid orange fill would compete with
+         the orange Summary button beside it). -->
+    <Style x:Key="ElusiveDataIconToggle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Width" Value="34"/>
+        <Setter Property="Height" Value="28"/>
+        <Setter Property="Margin" Value="0,0,8,0"/>
+        <Setter Property="Background" Value="{DynamicResource SecondaryButtonBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            BorderBrush="Transparent" BorderThickness="1" CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource ElusiveDataOrangeBrush}"/>
+                            <Setter TargetName="bd" Property="BorderBrush" Value="#59F37934"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource SecondaryButtonHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Filter chip — the suite's evidence-category selector idiom from the RealmDB
+         Artifacts tab. Implemented as a restyled CheckBox so existing IsChecked
+         wiring keeps working; selected = orange tint + border (suite selection
+         language), category identity carried by a colored dot in the content. -->
+    <Style x:Key="ElusiveDataFilterChip" TargetType="{x:Type CheckBox}">
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,0,8,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <Border x:Name="bd" CornerRadius="14" BorderThickness="1"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            Background="Transparent" Padding="12,5">
+                        <ContentPresenter VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#33F37934"/>
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource ElusiveDataOrangeBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Bordered dark ComboBox — the suite's input idiom (matches the bordered
+         TextBoxes), replacing the Material Design underline look in dialogs. -->
+    <Style x:Key="ElusiveDataComboBox" TargetType="{x:Type ComboBox}">
+        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Padding" Value="10,0,28,0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ComboBox}">
+                    <Grid>
+                        <!-- Style="{x:Null}" suppresses the Material Design implicit
+                             ToggleButton (switch) style, which otherwise forces a tiny
+                             fixed-size toggle and breaks the bordered-box look. -->
+                        <ToggleButton x:Name="MainToggle"
+                                      Style="{x:Null}"
+                                      Focusable="False"
+                                      ClickMode="Press"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="bd"
+                                            Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            CornerRadius="4">
+                                        <Path Data="M 0 0 L 4 4 L 8 0 Z"
+                                              Fill="{DynamicResource SecondaryTextBrush}"
+                                              HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource ElusiveDataOrangeBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <ContentPresenter x:Name="ContentSite"
+                                          IsHitTestVisible="False"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"
+                                          HorizontalAlignment="Left"/>
+                        <Popup x:Name="PART_Popup"
+                               Placement="Bottom"
+                               IsOpen="{TemplateBinding IsDropDownOpen}"
+                               AllowsTransparency="True"
+                               Focusable="False"
+                               PopupAnimation="Fade">
+                            <Border Background="{DynamicResource PanelBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Margin="0,2,0,0"
+                                    MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                    SnapsToDevicePixels="True">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Compact Text Button for toolbars with limited space (e.g., Hex Viewer) -->
+    <Style x:Key="ElusiveDataCompactTextButton" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="#2C486A" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinWidth" Value="75" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="#3C5980"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- RadioButton Style -->
+    <Style x:Key="ElusiveDataRadioButton" TargetType="{x:Type RadioButton}">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RadioButton}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Ellipse x:Name="OuterCircle" Grid.Column="0" Width="18" Height="18"
+                                 Stroke="{DynamicResource BorderBrush}" StrokeThickness="2"
+                                 Fill="Transparent"/>
+                        <Ellipse x:Name="InnerCircle" Grid.Column="0" Width="10" Height="10"
+                                 Fill="{StaticResource ElusiveDataOrangeBrush}"
+                                 Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter Grid.Column="1" VerticalAlignment="Center"
+                                          Margin="8,0,0,0"
+                                          RecognizesAccessKey="True"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="InnerCircle" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="OuterCircle" Property="Stroke" Value="{StaticResource ElusiveDataOrangeBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="OuterCircle" Property="Stroke" Value="{StaticResource ElusiveDataOrangeBrush}"/>
+                            <Setter TargetName="OuterCircle" Property="StrokeThickness" Value="2.5"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="OuterCircle" Property="Stroke" Value="{DynamicResource DisabledTextBrush}"/>
+                            <Setter TargetName="InnerCircle" Property="Fill" Value="{DynamicResource DisabledTextBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- TextBox Style -->
     <Style x:Key="ElusiveDataTextBox" TargetType="{x:Type TextBox}" BasedOn="{StaticResource MaterialDesignTextBox}">
-        <Setter Property="Foreground" Value="{StaticResource ElusiveDataLightGrayBrush}" />
-        <Setter Property="CaretBrush" Value="{StaticResource ElusiveDataLightGrayBrush}" />
-        <Setter Property="BorderBrush" Value="#666666" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
         <Setter Property="Padding" Value="8,4" />
-        <Setter Property="Background" Value="#18293A" />
+        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
         <Setter Property="SelectionBrush" Value="#3F7FBF" />
         <Setter Property="SelectionTextBrush" Value="White" />
     </Style>
@@ -83,12 +805,247 @@
         <Setter Property="Margin" Value="0,5,0,10" />
     </Style>
 
+    <!-- Forensic Typography Hierarchy -->
+    <Style x:Key="ElusiveDataSectionHeader" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="Margin" Value="0,5,0,10" />
+    </Style>
+
+    <Style x:Key="ElusiveDataSubsectionHeader" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource ElusiveDataOrangeBrush}" />
+        <Setter Property="Margin" Value="0,3,0,8" />
+    </Style>
+
+    <Style x:Key="ElusiveDataLabel" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+    </Style>
+
+    <Style x:Key="ElusiveDataValue" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <Style x:Key="ElusiveDataStatusText" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <Style x:Key="ElusiveDataFrameTitle" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- WAL-Specific Typography Styles -->
+    
+    <!-- Advanced section labels (like "Advanced:") -->
+    <Style x:Key="ElusiveDataWalAdvancedLabel" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="#CCCCCC" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Button text within buttons (consistent sizing) -->
+    <Style x:Key="ElusiveDataWalButtonText" TargetType="{x:Type TextBlock}">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+
+    <!-- Table column headers -->
+    <Style x:Key="ElusiveDataWalTableHeader" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Standard table cell text -->
+    <Style x:Key="ElusiveDataWalTableCell" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- CheckBox Styles -->
+    
+    <!-- Standard white checkbox style (replaces purple Material Design) -->
+    <Style x:Key="WhiteCheckBoxStyle" TargetType="{x:Type CheckBox}">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="White"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- CheckBox square -->
+                        <Border x:Name="CheckBoxBorder"
+                                Grid.Column="0"
+                                Width="16" Height="16"
+                                Background="Transparent"
+                                BorderBrush="White"
+                                BorderThickness="1"
+                                CornerRadius="2">
+                            <!-- Checkmark path -->
+                            <Path x:Name="CheckMark"
+                                  Data="M 0 5 L 5 10 L 12 0"
+                                  Stroke="White"
+                                  StrokeThickness="2"
+                                  Visibility="Collapsed"
+                                  Margin="2"
+                                  Stretch="Uniform"/>
+                        </Border>
+
+                        <!-- Content -->
+                        <ContentPresenter Grid.Column="1"
+                                          Margin="6,0,0,0"
+                                          VerticalAlignment="Center"
+                                          HorizontalAlignment="Left"
+                                          RecognizesAccessKey="True"/>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="#F37934"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="#666666"/>
+                            <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="#666666"/>
+                            <Setter TargetName="CheckMark" Property="Stroke" Value="#666666"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Theme-aware checkbox style (replaces WhiteCheckBoxStyle for theme support) -->
+    <Style x:Key="ThemeAwareCheckBoxStyle" TargetType="{x:Type CheckBox}">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryTextBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- CheckBox square -->
+                        <Border x:Name="CheckBoxBorder"
+                                Grid.Column="0"
+                                Width="16" Height="16"
+                                Background="Transparent"
+                                BorderBrush="{DynamicResource PrimaryTextBrush}"
+                                BorderThickness="1"
+                                CornerRadius="2">
+                            <!-- Checkmark path -->
+                            <Path x:Name="CheckMark"
+                                  Data="M 0 5 L 5 10 L 12 0"
+                                  Stroke="{DynamicResource PrimaryTextBrush}"
+                                  StrokeThickness="2"
+                                  Visibility="Collapsed"
+                                  Margin="2"
+                                  Stretch="Uniform"/>
+                        </Border>
+
+                        <!-- Content -->
+                        <ContentPresenter Grid.Column="1"
+                                          Margin="6,0,0,0"
+                                          VerticalAlignment="Center"
+                                          HorizontalAlignment="Left"
+                                          RecognizesAccessKey="True"/>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="{DynamicResource AccentTextBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}"/>
+                            <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="{DynamicResource DisabledTextBrush}"/>
+                            <Setter TargetName="CheckMark" Property="Stroke" Value="{DynamicResource DisabledTextBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ComboBox dropdown item style - white text for dark dropdown backgrounds -->
+    <!-- NOTE: ComboBox dropdown popups have dark backgrounds that don't respect themes,
+         so dropdown items must always use white text for visibility -->
+    <Style x:Key="WhiteTextComboBoxItem" TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="8,4"/>
+        <Style.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter Property="Background" Value="#F37934"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="#F37934"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Standard WAL filter checkboxes -->
+    <Style x:Key="ElusiveDataWalFilterCheckBox" TargetType="{x:Type CheckBox}">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,0,12,0" />
+    </Style>
+
+    <!-- Forensic analysis checkboxes (preserves existing color overrides) -->
+    <Style x:Key="ElusiveDataWalForensicCheckBox" TargetType="{x:Type CheckBox}">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,0,12,0" />
+        <!-- NOTE: Foreground property intentionally omitted to preserve forensic color coding -->
+    </Style>
+
     <!-- Card Style -->
     <Style x:Key="ElusiveDataCard" TargetType="{x:Type materialDesign:Card}">
         <Setter Property="Background" Value="{StaticResource ElusiveDataBlueBrush}" />
         <Setter Property="Foreground" Value="{StaticResource ElusiveDataLightGrayBrush}" />
         <Setter Property="Padding" Value="16" />
-        <Setter Property="materialDesign:ShadowAssist.ShadowDepth" Value="Depth2" />
+        <Setter Property="materialDesign:ElevationAssist.Elevation" Value="Dp2" />
         <Setter Property="UniformCornerRadius" Value="6" />
         <Setter Property="Margin" Value="8" />
     </Style>
@@ -136,6 +1093,76 @@
                 <Setter Property="Background" Value="#3A3A3A" />
             </Trigger>
         </Style.Triggers>
+    </Style>
+
+    <!-- Slider Style -->
+    <Style x:Key="ElusiveDataSlider" TargetType="{x:Type Slider}">
+        <Setter Property="Foreground" Value="{StaticResource ElusiveDataOrangeBrush}"/>
+        <Setter Property="Background" Value="#3C5980"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ElusiveDataOrangeBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Slider}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto" MinHeight="{TemplateBinding MinHeight}"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TickBar x:Name="TopTick" Grid.Row="0" Height="4" Placement="Top" Visibility="Collapsed" Fill="#999"/>
+                        <Border x:Name="TrackBackground" Grid.Row="1" Height="4" Background="#3C5980" 
+                                VerticalAlignment="Center" Margin="5,0">
+                            <Canvas Margin="-5,0">
+                                <Rectangle x:Name="PART_SelectionRange" Height="4" Fill="{StaticResource ElusiveDataOrangeBrush}" 
+                                           Canvas.Top="0" Visibility="Hidden"/>
+                            </Canvas>
+                        </Border>
+                        <Track x:Name="PART_Track" Grid.Row="1">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="Slider.DecreaseLarge">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Rectangle Height="4" Fill="{StaticResource ElusiveDataOrangeBrush}"/>
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="Slider.IncreaseLarge">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Rectangle Height="4" Fill="Transparent"/>
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.IncreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb x:Name="Thumb">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Ellipse x:Name="Ellipse" Width="16" Height="16" 
+                                                     Fill="{StaticResource ElusiveDataOrangeBrush}"
+                                                     Stroke="White" StrokeThickness="1"/>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Ellipse" Property="Fill" Value="#FF8C42"/>
+                                                    <Setter TargetName="Ellipse" Property="Width" Value="18"/>
+                                                    <Setter TargetName="Ellipse" Property="Height" Value="18"/>
+                                                </Trigger>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter TargetName="Ellipse" Property="Fill" Value="#666"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                        <TickBar x:Name="BottomTick" Grid.Row="2" Height="4" Placement="Bottom" Visibility="Collapsed" Fill="#999"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
 </ResourceDictionary> 

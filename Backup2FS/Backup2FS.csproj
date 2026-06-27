@@ -11,7 +11,7 @@
     <Product>Backup2FS</Product>
     <Description>iOS Backup Normalizer for Forensic Analysis</Description>
     <Copyright>© Elusive Data 2025</Copyright>
-    <Version>2.0.0</Version>
+    <Version>3.0.0</Version>
     <ImplicitUsings>enable</ImplicitUsings>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
@@ -20,6 +20,7 @@
     <None Remove="Resources\Icons\app_icon.ico" />
     <!-- <None Remove="Resources\Images\app_placeholder.png" /> -->
     <None Remove="Resources\Images\logo.png" />
+    <None Remove="Resources\Images\Vertical_Logo.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,6 +41,7 @@
     <Resource Include="Resources\Icons\app_icon.ico" />
     <!-- <Resource Include="Resources\Images\app_placeholder.png" /> -->
     <Resource Include="Resources\Images\logo.png" />
+    <Resource Include="Resources\Images\Vertical_Logo.png" />
   </ItemGroup>
 
   <ItemGroup>

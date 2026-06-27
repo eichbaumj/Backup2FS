@@ -63,6 +63,11 @@ namespace Backup2FS.ViewModels
         [ObservableProperty]
         private string _isEncrypted = "No";
 
+        // Encrypted-backup decryption state: set once the user supplies a correct password,
+        // consumed by NormalizeAsync to decrypt before normalizing.
+        private bool _isEncryptedUnlocked;
+        private string? _decryptPassword;
+
         [ObservableProperty]
         private string _phoneNumber = string.Empty;
 
@@ -98,9 +103,6 @@ namespace Backup2FS.ViewModels
 
         [ObservableProperty]
         private bool _usesSHA256 = false;
-
-        [ObservableProperty]
-        private bool _isOptionsDialogOpen = false;
 
         [ObservableProperty]
         private bool _isNormalizing;
@@ -143,9 +145,6 @@ namespace Backup2FS.ViewModels
 
         // Store the last time we changed pause state - for debouncing
         private long _lastPauseOperationTicks = 0;
-
-        // Add a field to store temporary hash algorithm selection
-        private string _tempHashAlgorithm = "sha256";
 
         // Animate progress changes for visual smoothness
         private void InitializeProgressAnimation()
@@ -327,9 +326,6 @@ namespace Backup2FS.ViewModels
                     Console.WriteLine($"Updated backup extractor service with algorithms: {string.Join(", ", selectedAlgorithmsList)}");
                 }
                 
-                // Close the options dialog
-                IsOptionsDialogOpen = false;
-                
                 Console.WriteLine($"Saved hash algorithms: MD5={UsesMD5}, SHA1={UsesSHA1}, SHA256={UsesSHA256}");
                 Console.WriteLine($"SelectedHashAlgorithm is now: {SelectedHashAlgorithm}");
                 
@@ -474,27 +470,56 @@ namespace Backup2FS.ViewModels
                     { "sha256", UsesSHA256 }
                 };
                 _settingsManager?.SetHashAlgorithms(hashSettings);
-                
-                // Set up the progress reporting to update the UI thread properly
-                _backupExtractorService.ProgressReport += (progress) =>
+
+                // === Encrypted-backup decryption phase ===
+                // If the selected backup is encrypted (password validated on load), decrypt it into
+                // a sibling "<Destination>_DecryptedBackup" folder first, then normalize from there.
+                // This reuses the entire normalization pipeline unchanged.
+                string effectiveBackupFolder = BackupFolder;
+                if (_isEncryptedUnlocked && !string.IsNullOrEmpty(_decryptPassword))
                 {
-                    // This will be called from a background thread, so we need to dispatch to UI thread
-                    // Use BeginInvoke for immediate handling without waiting
-                    System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                    string stagingDir = OutputFolder.TrimEnd('\\', '/') + "_DecryptedBackup";
+                    AddLog($"Encrypted backup: decrypting to {stagingDir}");
+
+                    var decryptor = new BackupDecryptor(BackupFolder);
+                    decryptor.LogMessage += AddLog;
+                    decryptor.ProgressReport += OnExtractorProgress;
+                    try
                     {
-                        try
+                        if (!decryptor.Unlock(_decryptPassword))
                         {
-                            NormalizationProgressPercent = progress;
-                            // Force immediate update of progress
-                            ProgressValue = progress;
+                            AddLog("Decryption failed: the stored password is no longer valid.");
+                            return;
                         }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"Error updating progress: {ex.Message}");
-                        }
-                    }));
-                };
-                
+                        bool decryptedOk = await decryptor.DecryptToFolderAsync(
+                            stagingDir, _extractionCancellationTokenSource.Token, () => IsPaused);
+                        if (!decryptedOk)
+                            AddLog("Warning: some files could not be decrypted; continuing with the rest.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        AddLog("Decryption cancelled by user.");
+                        return;
+                    }
+                    finally
+                    {
+                        decryptor.LogMessage -= AddLog;
+                        decryptor.ProgressReport -= OnExtractorProgress;
+                    }
+
+                    AddLog("Decryption complete. Normalizing the decrypted backup...");
+                    effectiveBackupFolder = stagingDir;
+
+                    // Reset the progress bar for the normalization phase.
+                    System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        NormalizationProgressPercent = 0;
+                        ProgressValue = 0;
+                    });
+                }
+
+                // Progress reporting is wired once in the constructor (see OnExtractorProgress).
+
                 // Start the extraction process (on a background thread via Task.Run)
                 AddLog("Starting normalization process");
                 
@@ -507,8 +532,8 @@ namespace Backup2FS.ViewModels
                     try 
                     {
                         return await _backupExtractorService.ExtractBackupAsync(
-                            BackupFolder, 
-                            OutputFolder, 
+                            effectiveBackupFolder,
+                            OutputFolder,
                             _extractionCancellationTokenSource.Token);
                     }
                     catch (Exception ex)
@@ -633,20 +658,27 @@ namespace Backup2FS.ViewModels
         }
 
         [RelayCommand]
-        private void Cancel()
+        private async Task Cancel()
         {
             if (!IsNormalizing)
                 return;
 
-            // Ask for confirmation
-            var result = System.Windows.MessageBox.Show(
-                "Are you sure you want to cancel the normalization process?",
+            // Ask for confirmation (suite-styled dialog instead of the native MessageBox)
+            var result = await Views.NotificationDialog.ShowAsync(
+                System.Windows.Application.Current.MainWindow,
                 "Cancel Normalization",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                "Are you sure you want to cancel the normalization process?",
+                Views.NotificationType.Warning,
+                null,
+                Views.NotificationButtons.YesNo);
 
-            if (result == MessageBoxResult.Yes)
+            if (result == Views.NotificationResult.Yes)
             {
+                // The dialog is non-modal, so the run may have finished while it was open.
+                // Don't stamp a completed run as "cancelled".
+                if (!IsNormalizing)
+                    return;
+
                 _backupExtractorService.Cancel();
                 _extractionCancellationTokenSource?.Cancel();
                 AddLog($"Normalization cancelled at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
@@ -669,9 +701,12 @@ namespace Backup2FS.ViewModels
             // Create a save file dialog
             var dialog = new WinForms.SaveFileDialog
             {
-                Filter = "CSV Files (*.csv)|*.csv|Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
-                DefaultExt = ".csv",
-                Title = "Save Log File"
+                // This report is a human-readable transcript + device info + app list, not a table,
+                // so it defaults to .txt (the per-file forensic data lives in the detailed CSV).
+                Filter = "Text Report (*.txt)|*.txt|CSV Files (*.csv)|*.csv|All Files (*.*)|*.*",
+                DefaultExt = ".txt",
+                FileName = $"Backup2FS_Report_{DateTime.Now:yyyyMMdd_HHmmss}.txt",
+                Title = "Save Report"
             };
 
             if (dialog.ShowDialog() == WinForms.DialogResult.OK)
@@ -814,65 +849,35 @@ namespace Backup2FS.ViewModels
         }
 
         [RelayCommand]
-        private void OpenOptionsDialog()
+        private async Task NewSession()
         {
-            try
-            {
-                // Load the current settings into the dialog
-                UpdateHashAlgorithmFlags();
-                
-                // Store current settings in case of cancel
-                _tempHashAlgorithm = SelectedHashAlgorithm;
-                
-                // Open the dialog
-                IsOptionsDialogOpen = true;
-                
-                Console.WriteLine($"OPTIONS DIALOG OPENED - Current algorithms: {SelectedHashAlgorithm}");
-                Console.WriteLine($"Checkbox states: MD5:{UsesMD5}, SHA1:{UsesSHA1}, SHA256:{UsesSHA256}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error opening options dialog: {ex.Message}");
-            }
-        }
-
-        [RelayCommand]
-        private void CloseOptionsDialog()
-        {
-            try
-            {
-                // Restore previous settings if dialog was canceled
-                var oldAlgorithms = _tempHashAlgorithm?.Split(',').Select(a => a.Trim().ToLower()).ToList() ?? new List<string>();
-                
-                // Update checkbox states based on previous settings
-                UsesMD5 = oldAlgorithms.Contains("md5");
-                UsesSHA1 = oldAlgorithms.Contains("sha1");
-                UsesSHA256 = oldAlgorithms.Contains("sha256");
-                
-                // Close the dialog
-                IsOptionsDialogOpen = false;
-                
-                Console.WriteLine($"OPTIONS DIALOG CANCELED - Restored to previous selection: {_tempHashAlgorithm}");
-                Console.WriteLine($"Checkbox states after restore: MD5:{UsesMD5}, SHA1:{UsesSHA1}, SHA256:{UsesSHA256}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error closing options dialog: {ex.Message}");
-            }
-        }
-
-        [RelayCommand]
-        private void NewSession()
-        {
-            // Ask for confirmation
-            var result = System.Windows.MessageBox.Show(
-                "Are you sure you want to start a new session? This will clear the current logs and reset the application state.",
+            // Ask for confirmation (suite-styled dialog instead of the native MessageBox)
+            var result = await Views.NotificationDialog.ShowAsync(
+                System.Windows.Application.Current.MainWindow,
                 "New Session",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                "Are you sure you want to start a new session? This will clear the current logs and reset the application state.",
+                Views.NotificationType.Warning,
+                null,
+                Views.NotificationButtons.YesNo);
 
-            if (result == MessageBoxResult.Yes)
+            if (result == Views.NotificationResult.Yes)
             {
+                // If a normalization is still running, stop it first so the background task
+                // doesn't keep writing progress/log lines into the fresh session (or leave an
+                // orphaned extraction running against the same service instance).
+                if (IsNormalizing)
+                {
+                    try
+                    {
+                        _backupExtractorService.Cancel();
+                        _extractionCancellationTokenSource?.Cancel();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error cancelling normalization for new session: {ex.Message}");
+                    }
+                }
+
                 // Reset all state flags
                 IsProcessing = false;
                 IsNormalizing = false;
@@ -880,7 +885,11 @@ namespace Backup2FS.ViewModels
                 IsPaused = false;
                 IsCompleted = false;
                 CanSaveLog = false;
-                
+
+                // Forget any encrypted-backup unlock state.
+                _isEncryptedUnlocked = false;
+                _decryptPassword = null;
+
                 // Clear logs
                 Logs.Clear();
                 _logBuilder.Clear();
@@ -902,6 +911,70 @@ namespace Backup2FS.ViewModels
         #endregion
 
         #region Private Methods
+
+        /// <summary>
+        /// Handles progress callbacks from the extractor (fired on a background thread) and
+        /// marshals the update onto the UI thread. Subscribed once in the constructor.
+        /// </summary>
+        private void OnExtractorProgress(int progress)
+        {
+            System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    NormalizationProgressPercent = progress;
+                    // Force immediate update of progress
+                    ProgressValue = progress;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error updating progress: {ex.Message}");
+                }
+            }));
+        }
+
+        /// <summary>
+        /// Shows the password dialog (on the UI thread) and validates the entered password by
+        /// unlocking the backup keybag (on the calling background thread). Loops on a wrong
+        /// password until the user succeeds or cancels. On success, stores the password and sets
+        /// the unlocked flag. Returns false if the user cancels.
+        /// </summary>
+        private bool PromptAndValidatePassword()
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null) return false;
+
+            string? error = null;
+            while (true)
+            {
+                string? password = dispatcher.Invoke(() =>
+                {
+                    var dlg = new Views.PasswordDialog(error) { Owner = System.Windows.Application.Current.MainWindow };
+                    return dlg.ShowDialog() == true ? dlg.EnteredPassword : null;
+                });
+
+                if (password == null)
+                    return false; // user cancelled
+
+                try
+                {
+                    var decryptor = new BackupDecryptor(BackupFolder);
+                    if (decryptor.Unlock(password))
+                    {
+                        _decryptPassword = password;
+                        _isEncryptedUnlocked = true;
+                        return true;
+                    }
+                    error = "Incorrect password. Please try again.";
+                    AddLog("Incorrect backup password.");
+                }
+                catch (Exception ex)
+                {
+                    error = $"Could not read the backup keybag: {ex.Message}";
+                    AddLog($"Error validating password: {ex.Message}");
+                }
+            }
+        }
 
         private void LoadBackupInfo()
         {
@@ -940,13 +1013,22 @@ namespace Backup2FS.ViewModels
                     }
 
                     // Check if backup is encrypted
+                    _isEncryptedUnlocked = false;
+                    _decryptPassword = null;
                     bool isEncrypted = plistParser.IsBackupEncrypted(BackupFolder);
                     if (isEncrypted)
                     {
-                        // Update UI thread for this property
-                         System.Windows.Application.Current?.Dispatcher.Invoke(() => IsEncrypted = "Yes");
-                        AddLog("This backup is encrypted. Please decrypt it first to proceed with normalization.");
-                        return;
+                        System.Windows.Application.Current?.Dispatcher.Invoke(() => IsEncrypted = "Yes");
+                        AddLog("This backup is encrypted. A password is required to decrypt it.");
+
+                        // Auto-prompt for the iTunes backup password and validate it now.
+                        if (!PromptAndValidatePassword())
+                        {
+                            AddLog("Decryption cancelled. An encrypted backup cannot be normalized without the password.");
+                            return;
+                        }
+                        AddLog("Password accepted. The backup will be decrypted automatically when you click Normalize.");
+                        // Fall through: device info (Manifest.plist Lockdown) is plaintext and can be parsed.
                     }
                     else
                     {
@@ -984,11 +1066,11 @@ namespace Backup2FS.ViewModels
                             InstalledApps.Add(app); 
                         }
 
-                        // Process icons in the background without detailed logging
-                        System.Threading.Thread.Sleep(300);
-                        Task.Run(async () => 
+                        // Process icons in the background without detailed logging.
+                        // (No Thread.Sleep here — this runs on the UI thread and would freeze it.)
+                        Task.Run(async () =>
                         {
-                            try 
+                            try
                             {
                                 await ProcessAppIcons();
                             }
@@ -1172,21 +1254,16 @@ namespace Backup2FS.ViewModels
                 
                 // Load hash algorithm settings from settings manager
                 UpdateHashAlgorithmFlags();
-                
-                // Store the current setting for dialog cancel handling
-                _tempHashAlgorithm = SelectedHashAlgorithm;
-                
+
                 // Initialize progress animation
                 InitializeProgressAnimation();
                 
                 // Initialize the BackupExtractorService
                 _backupExtractorService = new BackupExtractorService();
                 _backupExtractorService.LogMessage += AddLog;
-                _backupExtractorService.ProgressReport += (progress) =>
-                {
-                    // Progress reporting code remains unchanged
-                    // ... existing code ...
-                };
+                // Subscribe ONCE here (was previously re-subscribed on every NormalizeAsync,
+                // leaking a handler per run / per New Session).
+                _backupExtractorService.ProgressReport += OnExtractorProgress;
                 
                 // Set hash algorithms in the backup extractor service
                 var selectedAlgorithms = new List<string>();

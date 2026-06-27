@@ -8,12 +8,14 @@
         xmlns:vm="clr-namespace:Backup2FS.ViewModels"
         xmlns:converters="clr-namespace:Backup2FS.Converters"
         mc:Ignorable="d"
-        Title="Backup2FS" 
-        Height="950" 
+        Title="Backup2FS"
+        Height="950"
         Width="1300"
+        MinHeight="600"
+        MinWidth="900"
         Icon="pack://application:,,,/Resources/Icons/app_icon.ico"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        Background="{DynamicResource MaterialDesignPaper}"
+        Background="{DynamicResource WindowBackgroundBrush}"
         TextElement.FontWeight="Regular"
         TextElement.FontSize="13"
         TextOptions.TextFormattingMode="Ideal"
@@ -21,305 +23,19 @@
         FontFamily="{DynamicResource MaterialDesignFont}"
         WindowStartupLocation="CenterScreen">
 
+    <!-- Borderless custom chrome: the 60px brand ribbon becomes the caption area (drag,
+         double-click maximize, right-click system menu) via CaptionHeight. Min/max/close are
+         our own buttons in the ribbon. GlassFrameThickness keeps a sliver of DWM frame so the
+         window retains its drop shadow and Win11 rounded corners. -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="60"
+                      ResizeBorderThickness="6"
+                      CornerRadius="0"
+                      GlassFrameThickness="0,0,0,1"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
     <Window.Resources>
-        <!-- Custom Style for Options Dialog Checkboxes -->
-        <Style x:Key="HighContrastCheckBox" TargetType="CheckBox">
-            <Setter Property="Foreground" Value="Black"/>
-            <Setter Property="Margin" Value="0,8,0,8"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="CheckBox">
-                        <StackPanel Orientation="Horizontal">
-                            <Border x:Name="checkBoxBorder" 
-                                   Width="25" 
-                                   Height="25" 
-                                   Background="White" 
-                                   BorderBrush="#0078D7" 
-                                   BorderThickness="2" 
-                                   CornerRadius="3"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,8,0">
-                                <Path x:Name="checkMark" 
-                                     Data="M 5,12 L 10,18 L 20,5" 
-                                     Stroke="White" 
-                                     StrokeThickness="3" 
-                                     Visibility="Collapsed"
-                                     VerticalAlignment="Center"
-                                     HorizontalAlignment="Center"/>
-                            </Border>
-                            <ContentPresenter VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="checkBoxBorder" Property="Background" Value="#0078D7"/>
-                                <Setter TargetName="checkMark" Property="Visibility" Value="Visible"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
-        <!-- Custom Style for Orange Buttons (Select, Normalize, Open Folder) -->
-        <Style x:Key="OrangeButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
-            <Setter Property="Background" Value="{StaticResource ElusiveDataOrangeBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{StaticResource ElusiveDataRedBrush}"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        
-        <!-- Custom Style for Red Buttons (Pause, Cancel, Save Log) -->
-        <Style x:Key="RedButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedAccentButton}">
-            <Setter Property="Background" Value="{StaticResource ElusiveDataRedBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{StaticResource ElusiveDataOrangeBrush}"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        
-        <!-- Dialog Template for Options -->
-        <DataTemplate x:Key="OptionsDialogTemplate">
-            <Grid Width="600" Height="400">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                
-                <!-- Title Bar - Blue Header -->
-                <Border Grid.Row="0" Background="#0078D7" Padding="8,4">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <TextBlock Grid.Column="0" 
-                                  Text="Options" 
-                                  Foreground="White" 
-                                  FontSize="14" 
-                                  VerticalAlignment="Center"
-                                  Margin="8,0,0,0"/>
-                        
-                        <Button Grid.Column="2" 
-                               Style="{StaticResource MaterialDesignFlatButton}"
-                               Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
-                               CommandParameter="False"
-                               Padding="4"
-                               Foreground="White"
-                               Margin="0,-2,0,0"
-                               MinWidth="0">
-                            <materialDesign:PackIcon Kind="Close" Width="16" Height="16"/>
-                        </Button>
-                    </Grid>
-                </Border>
-                
-                <!-- Main Content -->
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="200"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    
-                    <!-- Left Side Nav Bar - Dark Navy Blue -->
-                    <Border Grid.Column="0" Background="#121E2B">
-                        <StackPanel>
-                            <!-- Selected Item - Highlighted with white lines above and below -->
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="1"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="1"/>
-                                </Grid.RowDefinitions>
-                                
-                                <!-- Top White Line -->
-                                <Border Grid.Row="0" Background="White" Opacity="0.3"/>
-                                
-                                <!-- Selected Menu Item -->
-                                <Border Grid.Row="1" Background="#0078D7" Padding="16,10">
-                                    <TextBlock Text="Hash Algorithms" 
-                                              Foreground="White"
-                                              FontSize="14"/>
-                                </Border>
-                                
-                                <!-- Bottom White Line -->
-                                <Border Grid.Row="2" Background="White" Opacity="0.3"/>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Right Side Content - White -->
-                    <Border Grid.Column="1" Background="White">
-                        <StackPanel Margin="16,16,16,0">
-                            <TextBlock Text="Hash Algorithms" 
-                                     Foreground="#333333"
-                                     FontWeight="SemiBold"
-                                     FontSize="16" 
-                                     Margin="0,0,0,16"/>
-                            
-                            <Border Background="#F5F5F5" Padding="16,12,16,12">
-                                <StackPanel>
-                                    <CheckBox Content="MD5" 
-                                            IsChecked="{Binding UsesMD5}" 
-                                            Style="{StaticResource HighContrastCheckBox}"/>
-                                    
-                                    <CheckBox Content="SHA-1" 
-                                            IsChecked="{Binding UsesSHA1}" 
-                                            Style="{StaticResource HighContrastCheckBox}"/>
-                                    
-                                    <CheckBox Content="SHA-256" 
-                                            IsChecked="{Binding UsesSHA256}" 
-                                            Style="{StaticResource HighContrastCheckBox}"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </Border>
-                </Grid>
-                
-                <!-- Footer with OK/Cancel buttons -->
-                <Border Grid.Row="2" Background="#F5F5F5" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="16,12">
-                        <Button Content="OK" 
-                               Style="{StaticResource MaterialDesignRaisedButton}"
-                               Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
-                               CommandParameter="True"
-                               Width="100"
-                               Margin="0,0,8,0"
-                               Background="{DynamicResource ElusiveDataOrangeBrush}"
-                               Foreground="White"/>
-                        
-                        <Button Content="Cancel" 
-                               Style="{StaticResource MaterialDesignRaisedButton}"
-                               Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
-                               CommandParameter="False"
-                               Width="100"
-                               Background="#666666"
-                               Foreground="White"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-        </DataTemplate>
-        
-        <!-- Dialog Template for About -->
-        <DataTemplate x:Key="AboutDialogTemplate">
-            <Grid Width="500" Height="500">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                
-                <!-- Title Bar - Standard Windows Style -->
-                <Border Grid.Row="0" Background="#0078D7" Padding="8,4">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <Image Grid.Column="0" 
-                               Source="pack://application:,,,/Resources/Icons/app_icon.ico" 
-                               Width="16" 
-                               Height="16" 
-                               Margin="8,0,4,0" 
-                               VerticalAlignment="Center"/>
-                        
-                        <TextBlock Grid.Column="1" 
-                                  Text="About Backup2FS" 
-                                  Foreground="White" 
-                                  FontSize="14" 
-                                  VerticalAlignment="Center"
-                                  Margin="4,0,0,0"/>
-                        
-                        <Button Grid.Column="2" 
-                               Style="{StaticResource MaterialDesignFlatButton}"
-                               Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
-                               Padding="4"
-                               Foreground="White"
-                               Margin="0,-2,0,0"
-                               MinWidth="0">
-                            <materialDesign:PackIcon Kind="Close" Width="16" Height="16"/>
-                        </Button>
-                    </Grid>
-                </Border>
-                
-                <!-- Logo Banner with Navy Blue Background -->
-                <Border Grid.Row="1" Background="{DynamicResource ElusiveDataDarkBlueBrush}" 
-                       Padding="24,24,24,24" 
-                       HorizontalAlignment="Stretch">
-                    <StackPanel HorizontalAlignment="Center">
-                        <Image Source="pack://application:,,,/Resources/Images/logo.png" 
-                              Height="80" 
-                              HorizontalAlignment="Center" 
-                              Margin="0,8,0,16"/>
-                        
-                        <TextBlock Text="iOS Backup Normalizer v2.0.1" 
-                                  Foreground="White" 
-                                  HorizontalAlignment="Center"
-                                  FontSize="16"
-                                  Margin="0,0,0,8"/>
-                    </StackPanel>
-                </Border>
-                
-                <!-- Copyright Section -->
-                <Border Grid.Row="2" Background="#1A2C42" Padding="16,20">
-                    <TextBlock Text="© 2025 Elusive Data" 
-                              HorizontalAlignment="Center" 
-                              VerticalAlignment="Center"
-                              FontSize="14"
-                              Foreground="White"/>
-                </Border>
-                
-                <!-- Contact Information Section -->
-                <Border Grid.Row="3" Background="#1A2C42" Padding="16,20">
-                    <TextBlock HorizontalAlignment="Center" 
-                              VerticalAlignment="Center"
-                              FontSize="13"
-                              Foreground="White">
-                        <Run Text="www.elusivedata.io"/>
-                        <Run Text=" | "/>
-                        <Run Text="support@elusivedata.io"/>
-                    </TextBlock>
-                </Border>
-                
-                <!-- Disclaimer Section -->
-                <Border Grid.Row="4" Background="#333333" Padding="12,12" Margin="0">
-                    <TextBlock Text="DISCLAIMER: This software is provided &quot;as is&quot; without warranty of any kind. Elusive Data is not responsible for the accuracy, completeness, or reliability of any information extracted or processed by this tool. Users should independently verify all results before taking any action based on them. This software is designed as an aid for forensic analysis and is not a substitute for professional judgment or expertise."
-                              HorizontalAlignment="Center" 
-                              TextWrapping="Wrap"
-                              TextAlignment="Center"
-                              FontSize="11"
-                              Foreground="White"
-                              Opacity="0.9"
-                              Margin="8"
-                              VerticalAlignment="Center"/>
-                </Border>
-                
-                <!-- Footer/OK Button -->
-                <Border Grid.Row="5" Background="#F5F5F5" Padding="0,8,0,8">
-                    <Button Content="OK" 
-                           Style="{StaticResource MaterialDesignRaisedButton}"
-                           Background="{DynamicResource ElusiveDataOrangeBrush}"
-                           Foreground="White"
-                           Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
-                           Margin="0,0,16,0"
-                           Width="100"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Center"/>
-                </Border>
-            </Grid>
-        </DataTemplate>
-        
         <!-- Style for info button -->
         <Style x:Key="IconButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignIconButton}">
             <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
@@ -336,75 +52,67 @@
 
     <materialDesign:DialogHost Identifier="RootDialog">
         <DockPanel>
-            <!-- Header with Logo and Icon Buttons -->
-            <Grid DockPanel.Dock="Top" Background="{DynamicResource ElusiveDataDarkBlueBrush}" Height="50">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                
-                <!-- Logo and App Name -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0">
-                    <Image Source="pack://application:,,,/Resources/Images/logo.png" Height="30" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="Backup2FS" VerticalAlignment="Center" Foreground="White" FontSize="16" Margin="20,0,0,0"/>
+            <!-- Brand ribbon (doubles as the window caption via WindowChrome) -->
+            <Border DockPanel.Dock="Top" Background="{DynamicResource RibbonGradientBrush}" Height="60">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Wordmark (no logo image, orange brand color over the gradient) -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
+                        <TextBlock Text="Backup" FontSize="20" FontWeight="Bold"
+                                   Foreground="{DynamicResource ElusiveDataOrangeBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="2FS" FontSize="20" FontWeight="Light"
+                                   Foreground="White" Margin="2,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Icon buttons + window controls -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                WindowChrome.IsHitTestVisibleInChrome="True">
+                        <!-- New Session (re-scan) -->
+                        <Button Style="{StaticResource HeaderButtonStyle}" ToolTip="New Session"
+                                Command="{Binding NewSessionCommand}" IsEnabled="{Binding IsProcessing}">
+                            <materialDesign:PackIcon Kind="Restart" Width="24" Height="24"/>
+                        </Button>
+                        <!-- Settings -->
+                        <Button Style="{StaticResource HeaderButtonStyle}" ToolTip="Settings" Click="SettingsButton_Click">
+                            <materialDesign:PackIcon Kind="Settings" Width="24" Height="24"/>
+                        </Button>
+                        <!-- About -->
+                        <Button Style="{StaticResource HeaderButtonStyle}" ToolTip="About" Click="InfoButton_Click">
+                            <materialDesign:PackIcon Kind="Information" Width="24" Height="24"/>
+                        </Button>
+                        <!-- Help -->
+                        <Button Style="{StaticResource HeaderButtonStyle}" ToolTip="Help" Click="HelpButton_Click">
+                            <materialDesign:PackIcon Kind="HelpCircle" Width="24" Height="24"/>
+                        </Button>
+
+                        <Border Width="1" Height="24" Background="{DynamicResource RibbonDividerBrush}" Margin="8,0,4,0"/>
+
+                        <!-- Window controls -->
+                        <Button Style="{StaticResource CaptionButtonStyle}" Click="TitleBarMinimize_Click" ToolTip="Minimize">
+                            <materialDesign:PackIcon Kind="WindowMinimize" Width="16" Height="16"/>
+                        </Button>
+                        <Button x:Name="MaximizeButton" Style="{StaticResource CaptionButtonStyle}" Click="TitleBarMaximizeRestore_Click" ToolTip="Maximize">
+                            <materialDesign:PackIcon x:Name="MaximizeIcon" Kind="WindowMaximize" Width="16" Height="16"/>
+                        </Button>
+                        <Button Style="{StaticResource CaptionCloseButtonStyle}" Click="TitleBarClose_Click" ToolTip="Close">
+                            <materialDesign:PackIcon Kind="WindowClose" Width="16" Height="16"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Status bar -->
+            <Border DockPanel.Dock="Bottom" Background="{DynamicResource RibbonGradientBrush}" Height="30">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0">
+                    <TextBlock Text="Backup2FS" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBlock Text="Build: 3.0" Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
-                
-                <!-- Icon Buttons -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
-                    <!-- New Session Button -->
-                    <Button Style="{StaticResource MaterialDesignIconButton}" 
-                            ToolTip="New Session" 
-                            Command="{Binding NewSessionCommand}"
-                            IsEnabled="{Binding IsProcessing}"
-                            Foreground="White"
-                            Background="#142A40"
-                            BorderBrush="White"
-                            BorderThickness="1"
-                            Width="40" Height="40"
-                            Margin="8,0">
-                        <materialDesign:PackIcon Kind="Refresh" Width="22" Height="22"/>
-                    </Button>
-                    
-                    <!-- Info Button -->
-                    <Button Style="{StaticResource MaterialDesignIconButton}" 
-                            ToolTip="About" 
-                            Click="InfoButton_Click"
-                            Foreground="White"
-                            Background="#142A40"
-                            BorderBrush="White"
-                            BorderThickness="1"
-                            Width="40" Height="40"
-                            Margin="8,0">
-                        <materialDesign:PackIcon Kind="Information" Width="22" Height="22"/>
-                    </Button>
-                    
-                    <!-- Settings Button -->
-                    <Button Style="{StaticResource MaterialDesignIconButton}" 
-                            ToolTip="Settings" 
-                            Click="SettingsButton_Click"
-                            Foreground="White"
-                            Background="#142A40"
-                            BorderBrush="White"
-                            BorderThickness="1"
-                            Width="40" Height="40"
-                            Margin="8,0">
-                        <materialDesign:PackIcon Kind="Settings" Width="22" Height="22"/>
-                    </Button>
-                    
-                    <!-- Exit Button -->
-                    <Button Style="{StaticResource MaterialDesignIconButton}" 
-                            ToolTip="Exit" 
-                            Command="{Binding ExitCommand}"
-                            Foreground="White"
-                            Background="#142A40"
-                            BorderBrush="White"
-                            BorderThickness="1"
-                            Width="40" Height="40"
-                            Margin="8,0">
-                        <materialDesign:PackIcon Kind="ExitToApp" Width="22" Height="22"/>
-                    </Button>
-                </StackPanel>
-            </Grid>
+            </Border>
 
             <!-- Main Content -->
             <Grid>
@@ -708,8 +416,8 @@
                                 <TextBlock DockPanel.Dock="Left" Text="Backup Folder" 
                                           VerticalAlignment="Center" Width="120" />
                                 <Button DockPanel.Dock="Right" Margin="16,0,0,0"
-                                       Command="{Binding BrowseBackupCommand}" 
-                                       Style="{StaticResource OrangeButtonStyle}">
+                                       Command="{Binding BrowseBackupCommand}"
+                                       Style="{StaticResource ElusiveDataWalSecondaryButton}">
                                     <TextBlock Text="Select" />
                                 </Button>
                                 <TextBox Text="{Binding BackupFolder, UpdateSourceTrigger=PropertyChanged}" 
@@ -721,24 +429,24 @@
                                 <TextBlock DockPanel.Dock="Left" Text="Destination Folder" 
                                           VerticalAlignment="Center" Width="120" />
                                 <Button DockPanel.Dock="Right" Margin="16,0,0,0"
-                                       Command="{Binding BrowseOutputCommand}" 
-                                       Style="{StaticResource OrangeButtonStyle}">
+                                       Command="{Binding BrowseOutputCommand}"
+                                       Style="{StaticResource ElusiveDataWalSecondaryButton}">
                                     <TextBlock Text="Select" />
                                 </Button>
                                 <TextBox Text="{Binding OutputFolder, UpdateSourceTrigger=PropertyChanged}" 
                                         Style="{StaticResource MaterialDesignFilledTextBox}" />
                             </DockPanel>
                             
-                            <!-- Normalize Button -->
-                            <Button Grid.Row="2" Content="Normalize" 
-                                   HorizontalAlignment="Center" 
-                                   Style="{StaticResource OrangeButtonStyle}"
+                            <!-- Normalize Button (the only orange action; matches the suite's
+                                 "Analyze WAL Frames" primary button) -->
+                            <Button Grid.Row="2" Content="Normalize"
+                                   HorizontalAlignment="Center"
+                                   Style="{StaticResource ElusiveDataWalPrimaryButton}"
                                    Command="{Binding NormalizeCommand}"
                                    IsEnabled="{Binding IsProcessing, Converter={StaticResource InverseBooleanConverter}}"
-                                   Margin="0,16,0,0" 
-                                   Height="40" 
-                                   Width="200" 
-                                   materialDesign:ButtonAssist.CornerRadius="20"/>
+                                   Margin="0,16,0,0"
+                                   Height="40"
+                                   Width="200"/>
                         </Grid>
                     </Grid>
                     
@@ -770,10 +478,9 @@
                             
                             <!-- Progress Bar -->
                             <Grid Grid.Row="0">
-                                <ProgressBar Height="24" Minimum="0" Maximum="100" 
-                                           Value="{Binding ProgressValue}" 
-                                           Foreground="Green"
-                                           Background="{DynamicResource MaterialDesignDivider}"/>
+                                <ProgressBar Style="{StaticResource ElusiveDataProgressBar}"
+                                           Height="24" Minimum="0" Maximum="100"
+                                           Value="{Binding ProgressValue}"/>
                                 
                                 <!-- Percentage Text Overlay -->
                                 <TextBlock Text="{Binding ProgressValue, StringFormat='{}{0}%'}" 
@@ -789,25 +496,25 @@
                                         Content="{Binding IsPaused, Converter={StaticResource BooleanToPauseResumeTextConverter}, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
                                         Command="{Binding PauseResumeCommand}"
                                         IsEnabled="{Binding IsNormalizing}"
-                                        Style="{StaticResource RedButtonStyle}"
+                                        Style="{StaticResource ElusiveDataWalSecondaryButton}"
                                         Width="120"
                                         Margin="8,0"/>
                                 
                                 <Button Content="Cancel" 
-                                       Style="{StaticResource RedButtonStyle}"
+                                       Style="{StaticResource ElusiveDataWalSecondaryButton}"
                                        Command="{Binding CancelCommand}" 
                                        IsEnabled="{Binding IsNormalizing}"
                                        Margin="8,0" Width="120"/>
                                 
                                 <Button Content="Save Log" 
-                                       Style="{StaticResource RedButtonStyle}"
+                                       Style="{StaticResource ElusiveDataWalSecondaryButton}"
                                        Command="{Binding SaveLogCommand}" 
                                        IsEnabled="{Binding CanSaveLog}"
                                        Margin="8,0" Width="120"/>
                                 
-                                <Button Content="Open Folder" 
-                                       Style="{StaticResource OrangeButtonStyle}"
-                                       Command="{Binding OpenFolderCommand}" 
+                                <Button Content="Open Folder"
+                                       Style="{StaticResource ElusiveDataWalSecondaryButton}"
+                                       Command="{Binding OpenFolderCommand}"
                                        IsEnabled="{Binding IsCompleted}"
                                        Margin="8,0" Width="120"/>
                             </StackPanel>

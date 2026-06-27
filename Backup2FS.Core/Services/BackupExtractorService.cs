@@ -112,18 +112,20 @@ namespace Backup2FS.Core.Services
                 // Create the log file with headers
                 using (var writer = new StreamWriter(_detailedLogPath, false, Encoding.UTF8))
                 {
-                    // Write header information
+                    // Write header information (lines starting with '#' are comments, not data rows)
                     writer.WriteLine("# Backup2FS Detailed Log File");
                     writer.WriteLine($"# Created: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                    writer.WriteLine("# This file contains detailed information about all files processed");
-                    writer.WriteLine("# Timestamp: Date and time of processing");
-                    writer.WriteLine("# FileID: iOS backup file identifier (folder/filename)");
-                    writer.WriteLine("# FileCopied: Normalized path of the file copied");
-                    writer.WriteLine("# MD5/SHA1/SHA256: File hash values for verification");
+                    writer.WriteLine("# One row per Manifest.db entry processed during normalization.");
+                    writer.WriteLine("# Status   : Copied | Directory | Symlink | Missing | Error");
+                    writer.WriteLine("# Domain   : iOS backup domain (e.g. HomeDomain, AppDomain-<bundle id>)");
+                    writer.WriteLine("# FileID   : iOS backup file identifier (folder/filename)");
+                    writer.WriteLine("# OutputPath: where the file was written in the normalized file system");
+                    writer.WriteLine("# SizeBytes: size of the copied file");
+                    writer.WriteLine("# MD5/SHA1/SHA256: file hashes (only for the algorithms you selected)");
                     writer.WriteLine();
-                    
+
                     // Write CSV headers
-                    writer.WriteLine("Timestamp,FileID,FileCopied,MD5,SHA1,SHA256");
+                    writer.WriteLine("Timestamp,Status,Domain,RelativePath,FileID,OutputPath,SizeBytes,MD5,SHA1,SHA256");
                 }
                 
                 LogMessage?.Invoke($"Detailed log initialized at {_detailedLogPath}");
@@ -134,48 +136,60 @@ namespace Backup2FS.Core.Services
             }
         }
 
-        private void LogDetailedInfo(string fileID, string? filePath, string? relativePath, string? domain, Dictionary<string, string>? hashes, string status)
+        /// <summary>
+        /// Escapes a value for CSV per RFC 4180: fields containing a comma, quote, or newline are
+        /// wrapped in double quotes with embedded quotes doubled. iOS filenames frequently contain
+        /// commas, which would otherwise shift the hash columns.
+        /// </summary>
+        private static string CsvField(string? value)
         {
-            // We need to log successful file operations with hash values
-            // so removing this skip condition
-            // if (status == "Success")
-            //    return;
-                
+            value ??= string.Empty;
+            if (value.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0)
+                return "\"" + value.Replace("\"", "\"\"") + "\"";
+            return value;
+        }
+
+        private static long TryGetFileSize(string path)
+        {
+            try { return new FileInfo(path).Length; } catch { return 0; }
+        }
+
+        /// <summary>
+        /// Writes one structured row to the detailed forensic CSV.
+        /// Columns: Timestamp, Status, Domain, RelativePath, FileID, OutputPath, SizeBytes, MD5, SHA1, SHA256.
+        /// </summary>
+        private void LogFileRecord(string status, string? domain, string? relativePath, string fileId,
+                                   string? outputPath, long? size, Dictionary<string, string>? hashes)
+        {
+            if (string.IsNullOrEmpty(_detailedLogPath))
+                return;
+
             try
             {
-                if (!string.IsNullOrEmpty(_detailedLogPath))
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                string formattedFileId = string.IsNullOrEmpty(fileId) ? string.Empty :
+                    (fileId.Length >= 2 ? $"{fileId.Substring(0, 2)}/{fileId}" : fileId);
+                // Normalize separators so the output path is consistently Windows-style.
+                string outPath = string.IsNullOrEmpty(outputPath) ? string.Empty : outputPath.Replace('/', '\\');
+                string md5 = hashes != null && hashes.TryGetValue("md5", out string? m) ? m : string.Empty;
+                string sha1 = hashes != null && hashes.TryGetValue("sha1", out string? s1) ? s1 : string.Empty;
+                string sha256 = hashes != null && hashes.TryGetValue("sha256", out string? s2) ? s2 : string.Empty;
+
+                string line = string.Join(",",
+                    timestamp,
+                    CsvField(status),
+                    CsvField(domain ?? string.Empty),
+                    CsvField(relativePath ?? string.Empty),
+                    CsvField(formattedFileId),
+                    CsvField(outPath),
+                    size.HasValue ? size.Value.ToString() : string.Empty,
+                    md5, sha1, sha256);
+
+                lock (_logLock)
                 {
-                    // Format timestamp as proper human-readable ISO format
-                    string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                    
-                    // Format FileID to show folder/file structure correctly (first 2 chars/folder + / + remaining fileID)
-                    string formattedFileID = string.IsNullOrEmpty(fileID) ? string.Empty : 
-                        (fileID.Length >= 2 ? $"{fileID.Substring(0, 2)}/{fileID}" : fileID);
-                    
-                    // Get the normalized file path (relativePath)
-                    string fileCopied = string.IsNullOrEmpty(relativePath) ? 
-                        (status.Contains("missing") || status.Contains("not found") ? "File missing" : string.Empty) : 
-                        relativePath;
-                    
-                    // Get hash values or empty strings if not available
-                    string md5 = hashes != null && hashes.TryGetValue("md5", out string? md5Value) ? md5Value : string.Empty;
-                    string sha1 = hashes != null && hashes.TryGetValue("sha1", out string? sha1Value) ? sha1Value : string.Empty;
-                    string sha256 = hashes != null && hashes.TryGetValue("sha256", out string? sha256Value) ? sha256Value : string.Empty;
-                    
-                    // Format the log entry according to the expected format
-                    string logEntry = $"{timestamp},{formattedFileID},{fileCopied},{md5},{sha1},{sha256}";
-                    
-                    // Write to the log file
-                    lock (_logLock)
-                    {
-                        if (!File.Exists(_detailedLogPath))
-                        {
-                            // Try to recreate the log file if it was deleted
-                            InitializeDetailedLogging();
-                        }
-                        
-                        File.AppendAllText(_detailedLogPath, logEntry + Environment.NewLine);
-                    }
+                    if (!File.Exists(_detailedLogPath))
+                        InitializeDetailedLogging();
+                    File.AppendAllText(_detailedLogPath, line + Environment.NewLine);
                 }
             }
             catch (Exception ex)
@@ -188,9 +202,7 @@ namespace Backup2FS.Core.Services
         {
             try
             {
-                // Add a final entry to log
-                var finalEntry = new Dictionary<string, string> { { "Status", "Log file closed" } };
-                LogDetailedInfo("SYSTEM", "SYSTEM", "END", null, finalEntry, "Log file closed");
+                WriteDetailedLog("Log file closed.");
                 LogMessage?.Invoke($"Detailed log file saved to: {_detailedLogPath}");
             }
             catch (Exception ex)
@@ -308,13 +320,13 @@ namespace Backup2FS.Core.Services
                 catch (DllNotFoundException ex)
                 {
                     LogMessage?.Invoke($"Error: SQLite libraries not found. {ex.Message}");
-                    LogDetailedInfo("SYSTEM", "SYSTEM", "ERROR", null, null, $"SQLite DLL not found: {ex.Message}");
+                    WriteDetailedLog($"SQLite DLL not found: {ex.Message}");
                     return false;
                 }
                 catch (Exception ex)
                 {
                     LogMessage?.Invoke($"Error reading from database: {ex.Message}");
-                    LogDetailedInfo("SYSTEM", "SYSTEM", "ERROR", null, null, $"Database error: {ex.Message}");
+                    WriteDetailedLog($"Database error: {ex.Message}");
                     return false;
                 }
             }
@@ -359,13 +371,19 @@ namespace Backup2FS.Core.Services
             WriteDetailedLog("Starting to extract files from database...");
             int totalFiles = 0;
             int processedFiles = 0;
-            int successCount = 0;
-            int failureCount = 0;
+            // Classify entries by Manifest.db flags (1=file, 2=directory, 4=symlink) instead of
+            // counting directories/symlinks as "failures".
+            int filesCopied = 0;
+            int dirCount = 0;
+            int symlinkCount = 0;
+            int missingCount = 0;
+            int errorCount = 0;
 
             try
             {
                 // Create SQLite connection
-                using (var connection = new SQLiteConnection($"Data Source={Path.Combine(backupPath, "Manifest.db")};Version=3;"))
+                // Read Only: never mutate the source backup (no -wal/-shm/journal, no write lock).
+                using (var connection = new SQLiteConnection($"Data Source={Path.Combine(backupPath, "Manifest.db")};Version=3;Read Only=True;"))
                 {
                     connection.Open();
 
@@ -392,92 +410,85 @@ namespace Backup2FS.Core.Services
                             string fileId = reader["fileID"].ToString();
                             string domain = reader["domain"].ToString();
                             string relativePath = reader["relativePath"].ToString();
+                            int flags = reader["flags"] != DBNull.Value ? Convert.ToInt32(reader["flags"]) : 1;
 
                             processedFiles++;
                             double progressPercentage = (double)processedFiles / totalFiles * 100;
-                            
-                            // More frequent progress updates
+
+                            // Progress updates (UI only — not the CSV)
                             if (processedFiles % 10 == 0)
                             {
                                 ProgressReport?.Invoke((int)Math.Round(progressPercentage));
-                                // Update log to include file count and percentage
                                 LogMessage?.Invoke($"Processed {processedFiles}/{totalFiles} files ({progressPercentage:F1}%)");
-                                // Detailed log still keeps the detailed information
-                                WriteDetailedLog($"Processing file {processedFiles}/{totalFiles}: {domain}/{relativePath}");
                             }
 
-                            // Process the file
+                            // Process the entry, classified by its Manifest.db flags.
                             try
                             {
+                                string destinationPath = DomainMapper.MapPath(domain, relativePath);
+
+                                if (flags == 2)
+                                {
+                                    // Directory — create it; this is not a "failure".
+                                    Directory.CreateDirectory(destinationPath);
+                                    dirCount++;
+                                    LogFileRecord("Directory", domain, relativePath, fileId, destinationPath, null, null);
+                                    continue;
+                                }
+                                if (flags == 4)
+                                {
+                                    // Symlink — recorded for completeness; no content to copy.
+                                    symlinkCount++;
+                                    LogFileRecord("Symlink", domain, relativePath, fileId, null, null, null);
+                                    continue;
+                                }
+
+                                // flags == 1 (a regular file)
                                 string sourcePath = Path.Combine(backupPath, GetBackupFilePath(fileId));
                                 if (!File.Exists(sourcePath))
                                 {
-                                    LogDetailedInfo(fileId, sourcePath, relativePath, domain, null, $"Source file not found: {sourcePath} for {domain}/{relativePath}");
-                                    failureCount++;
+                                    missingCount++;
+                                    LogFileRecord("Missing", domain, relativePath, fileId, null, null, null);
                                     continue;
                                 }
 
-                                // Get the correct iOS-style destination path through DomainMapper
-                                string destinationPath = DomainMapper.MapPath(domain, relativePath);
-                                
-                                // Skip zero-byte files or directories
-                                var sourceInfo = new FileInfo(sourcePath);
-                                if (sourceInfo.Length == 0 && (sourceInfo.Attributes & FileAttributes.Directory) != 0)
+                                // No artificial per-file timeout: large files and long pauses must
+                                // never cause a file to be silently dropped. Cancellation is driven
+                                // solely by the user's token (a genuine OperationCanceledException
+                                // propagates and aborts the whole run).
+                                var (success, copyHashes) = await ProcessBackupFileAsync(sourcePath, destinationPath, null, token);
+                                if (success)
                                 {
-                                    // Create directory and continue
-                                    Directory.CreateDirectory(destinationPath);
-                                    successCount++;
-                                    continue;
-                                }
+                                    filesCopied++;
 
-                                // Process the backup file with a timeout
-                                using var processingTimeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-                                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, processingTimeoutCts.Token);
-                                
-                                try
-                                {
-                                    bool success = await ProcessBackupFileAsync(sourcePath, destinationPath, null, linkedCts.Token);
-                                    if (success)
-                                    {
-                                        successCount++;
-                                        
-                                        // Calculate hash values for the copied file
-                                        var hashValues = CalculateFileHashes(destinationPath, linkedCts.Token);
-                                        
-                                        // Log the successful file copy with file ID and normalized path
-                                        LogDetailedInfo(fileId, sourcePath, destinationPath, domain, hashValues, "Success");
-                                    }
-                                    else
-                                    {
-                                        failureCount++;
-                                        WriteDetailedLog($"Failed to process file: {domain}/{relativePath}");
-                                        
-                                        // Log the failed file copy
-                                        LogDetailedInfo(fileId, sourcePath, "", domain, null, "Failed to copy file");
-                                    }
+                                    // Reuse the hashes computed during the copy (single read of the
+                                    // file). Only recompute when the copy path didn't produce them
+                                    // (empty file, or the memory-fallback copy that doesn't hash).
+                                    var hashValues = copyHashes ?? CalculateFileHashes(destinationPath, token);
+                                    long size = TryGetFileSize(destinationPath);
+
+                                    LogFileRecord("Copied", domain, relativePath, fileId, destinationPath, size, hashValues);
                                 }
-                                catch (OperationCanceledException)
+                                else
                                 {
-                                    if (processingTimeoutCts.IsCancellationRequested)
-                                    {
-                                        WriteDetailedLog($"Processing timed out for file: {domain}/{relativePath}");
-                                        failureCount++;
-                                    }
-                                    else throw;
+                                    errorCount++;
+                                    LogFileRecord("Error", domain, relativePath, fileId, null, null, null);
                                 }
                             }
                             catch (Exception ex)
                             {
                                 if (ex is OperationCanceledException) throw;
-                                
-                                failureCount++;
-                                WriteDetailedLog($"Error processing file {fileId}: {ex.Message}");
+
+                                errorCount++;
+                                LogFileRecord("Error", domain, relativePath, fileId, null, null, null);
+                                WriteDetailedLog($"Error processing {domain}/{relativePath} ({fileId}): {ex.Message}");
                             }
                         }
                     }
                 }
 
-                WriteDetailedLog($"Extraction completed. Processed {processedFiles} files. Success: {successCount}, Failed: {failureCount}");
+                WriteDetailedLog($"Done. {processedFiles} entries: {filesCopied} files copied, {dirCount} directories, {symlinkCount} symlinks, {missingCount} missing, {errorCount} errors.");
+                LogMessage?.Invoke($"Extraction completed: {filesCopied} files copied, {dirCount} directories, {symlinkCount} symlinks, {missingCount} missing, {errorCount} errors.");
                 // Final progress report
                 ProgressReport?.Invoke(100);
                 return true;
@@ -497,7 +508,7 @@ namespace Backup2FS.Core.Services
         /// <summary>
         /// Processes a single backup file by copying it to the correct destination
         /// </summary>
-        private async Task<bool> ProcessBackupFileAsync(string sourcePath, string destinationPath, Dictionary<string, string> metadata, CancellationToken token)
+        private async Task<(bool success, Dictionary<string, string>? hashes)> ProcessBackupFileAsync(string sourcePath, string destinationPath, Dictionary<string, string>? metadata, CancellationToken token)
         {
             try
             {
@@ -527,16 +538,11 @@ namespace Backup2FS.Core.Services
                     }
                 }
 
-                // Skip if source file doesn't exist or is empty
+                // Skip if source file doesn't exist (the caller normally classifies this as Missing first).
                 if (!File.Exists(sourcePath))
                 {
-                    // Get a domain and relativePath from the destinationPath if possible
-                    string domain = "Unknown";
-                    string relativePath = Path.GetFileName(destinationPath);
-                    
-                    // Use LogDetailedInfo to ensure fileID is included
-                    LogDetailedInfo(fileID, sourcePath, relativePath, domain, null, $"Source file not found: {sourcePath}");
-                    return false;
+                    WriteDetailedLog($"Source file not found: {sourcePath}");
+                    return (false, null);
                 }
 
                 var fileInfo = new FileInfo(sourcePath);
@@ -545,7 +551,7 @@ namespace Backup2FS.Core.Services
                     // Create empty file and consider it a success
                     using (File.Create(destinationPath)) { }
                     WriteDetailedLog($"Created empty file: {destinationPath}");
-                    return true;
+                    return (true, null);
                 }
 
                 // Check if file is too large (greater than 100MB) and log a warning
@@ -555,40 +561,45 @@ namespace Backup2FS.Core.Services
                     WriteDetailedLog($"Processing large file ({fileInfo.Length / 1048576}MB): {destinationPath}");
                 }
 
-                // Copy file with hash verification and respect pause/cancel
+                // Copy file with hash verification and respect pause/cancel.
+                // The copy returns the hashes it computed while streaming, so the caller
+                // doesn't have to read the file a second time.
+                Dictionary<string, string>? resultHashes;
                 try
                 {
                     // Use a memory-efficient approach for copying
-                    bool success = await CopyFileWithHashVerificationAsync(sourcePath, destinationPath, token);
-                    
-                    if (success)
+                    resultHashes = await CopyFileWithHashVerificationAsync(sourcePath, destinationPath, token);
+
+                    if (resultHashes != null)
                     {
                         WriteDetailedLog($"Successfully processed file: {destinationPath}");
                     }
                     else
                     {
                         WriteDetailedLog($"Failed to verify file integrity: {destinationPath}");
-                        return false;
+                        return (false, null);
                     }
                 }
                 catch (OutOfMemoryException)
                 {
-                    // For extremely large files that cause memory issues, fall back to simple copy
+                    // For extremely large files that cause memory issues, fall back to simple copy.
+                    // The fallback copy does not hash, so leave hashes null (the caller computes them).
                     WriteDetailedLog($"Memory error with large file, falling back to direct copy: {destinationPath}");
                     await FallbackFileCopyAsync(sourcePath, destinationPath, token);
+                    resultHashes = null;
                 }
 
-                return true;
+                return (true, resultHashes);
             }
             catch (IOException ex)
             {
                 WriteDetailedLog($"I/O error processing file {sourcePath}: {ex.Message}");
-                return false;
+                return (false, null);
             }
             catch (UnauthorizedAccessException ex)
             {
                 WriteDetailedLog($"Access denied for file {sourcePath}: {ex.Message}");
-                return false;
+                return (false, null);
             }
             catch (OperationCanceledException)
             {
@@ -598,7 +609,7 @@ namespace Backup2FS.Core.Services
             catch (Exception ex)
             {
                 WriteDetailedLog($"Unexpected error processing file {sourcePath}: {ex.Message}");
-                return false;
+                return (false, null);
             }
             finally
             {
@@ -634,7 +645,13 @@ namespace Backup2FS.Core.Services
         /// <summary>
         /// Copies a file with hash verification for all selected algorithms
         /// </summary>
-        private async Task<bool> CopyFileWithHashVerificationAsync(string sourcePath, string destPath, CancellationToken token)
+        /// <summary>
+        /// Copies a file, computing the selected hashes while streaming. Returns the computed
+        /// hashes on success (an empty dictionary when no algorithms are selected), or null on
+        /// failure. There is intentionally no per-file timeout: large files and long pauses must
+        /// never drop a file — cancellation is driven solely by the caller's token.
+        /// </summary>
+        private async Task<Dictionary<string, string>?> CopyFileWithHashVerificationAsync(string sourcePath, string destPath, CancellationToken token)
         {
             try
             {
@@ -652,7 +669,7 @@ namespace Backup2FS.Core.Services
                 if (_hashAlgorithms == null || _hashAlgorithms.Count == 0)
                 {
                     await CopyWithoutHashAsync(sourcePath, destPath, token);
-                    return true;
+                    return new Dictionary<string, string>();
                 }
 
                 // Try to perform a stream copy with hash verification
@@ -671,17 +688,12 @@ namespace Backup2FS.Core.Services
                 int bytesRead;
                 long totalBytesRead = 0;
                 long fileSize = new FileInfo(sourcePath).Length;
-                
-                // Set a timeout for the operation
-                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(5)); // 5 minute timeout
-                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, timeoutCts.Token);
-                var combinedToken = linkedCts.Token;
 
                 // Read in chunks, updating hash and writing to destination
-                while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length, combinedToken)) > 0)
+                while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length, token)) > 0)
                 {
-                    combinedToken.ThrowIfCancellationRequested();
-                    CheckIfPaused(combinedToken);
+                    token.ThrowIfCancellationRequested();
+                    CheckIfPaused(token);
 
                     // Update hash values
                     foreach (var hasher in hashers.Values)
@@ -690,7 +702,7 @@ namespace Backup2FS.Core.Services
                     }
 
                     // Write to destination file
-                    await destStream.WriteAsync(buffer, 0, bytesRead, combinedToken);
+                    await destStream.WriteAsync(buffer, 0, bytesRead, token);
 
                     // Update progress occasionally (every 1MB)
                     totalBytesRead += bytesRead;
@@ -708,9 +720,9 @@ namespace Backup2FS.Core.Services
                 }
 
                 // Flush the destination stream
-                await destStream.FlushAsync(combinedToken);
+                await destStream.FlushAsync(token);
 
-                // Calculate hashes for verification purposes
+                // Collect the hashes computed during the copy (these match the bytes written).
                 Dictionary<string, string> calculatedHashes = new Dictionary<string, string>();
                 foreach (var algorithm in hashers.Keys)
                 {
@@ -723,9 +735,7 @@ namespace Backup2FS.Core.Services
                     hasher.Dispose();
                 }
 
-                // Log the calculated hashes
-                WriteDetailedLog($"Processed file: {Path.GetFileName(destPath)} - Hashes: {string.Join(", ", calculatedHashes.Select(h => $"{h.Key}:{h.Value}"))}");
-                return true;
+                return calculatedHashes;
             }
             catch (OperationCanceledException)
             {
@@ -744,7 +754,7 @@ namespace Backup2FS.Core.Services
                 {
                     try { File.Delete(destPath); } catch { /* Ignore cleanup errors */ }
                 }
-                return false;
+                return null;
             }
         }
 
@@ -848,72 +858,15 @@ namespace Backup2FS.Core.Services
 
             try
             {
-                // Format timestamp to match the human-readable format
+                // System/status messages are written as '#' comment lines so they never appear as
+                // data rows in the CSV (keeping the table clean: one data row == one file entry).
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                
-                // Extract fileID for missing files
-                string fileID = "";
-                string filePath = "";
-                
-                // Check for special cases where we need to extract fileID
-                if (message.Contains("Source file not found:"))
-                {
-                    // Extract the file path from the message
-                    int startIndex = message.IndexOf("Source file not found:") + "Source file not found:".Length;
-                    
-                    // Find the end of the file path - for paths that end with 'for [domain]/[path]'
-                    int endIndex = message.IndexOf(" for ", startIndex);
-                    if (endIndex > startIndex)
-                    {
-                        filePath = message.Substring(startIndex, endIndex - startIndex).Trim();
-                        
-                        // Extract the FileID from the path - expected format: [backupPath]/[2-char-folder]/[fileID]
-                        // First check if the path follows expected structure with the fileID at the end
-                        if (filePath.Contains("\\"))
-                        {
-                            string[] pathParts = filePath.Split('\\');
-                            if (pathParts.Length >= 2)
-                            {
-                                string folderPart = pathParts[pathParts.Length - 2]; // Get the folder (2 characters)
-                                string filePart = pathParts[pathParts.Length - 1];  // Get the file part (rest of fileID)
-                                
-                                // Verify the folder is 2 chars
-                                if (folderPart.Length == 2 && filePart.Length > 0)
-                                {
-                                    fileID = filePart;
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Write a structured log entry with fileID column for missing files
-                    string logEntry = $"{timestamp},{fileID},{message},,,";
-                    lock (_logLock)
-                    {
-                        if (!File.Exists(_detailedLogPath))
-                        {
-                            // Try to recreate the log file if it was deleted
-                            InitializeDetailedLogging();
-                        }
-                        
-                        File.AppendAllText(_detailedLogPath, logEntry + Environment.NewLine);
-                    }
-                    return;
-                }
-                
-                // For system messages, don't include hash values or file copied
-                // Place the message in the FileCopied column
-                string defaultLogEntry = $"{timestamp},,{message},,,";
-                
+                string comment = $"# {timestamp}  {message.Replace("\r", " ").Replace("\n", " ")}";
                 lock (_logLock)
                 {
                     if (!File.Exists(_detailedLogPath))
-                    {
-                        // Try to recreate the log file if it was deleted
                         InitializeDetailedLogging();
-                    }
-                    
-                    File.AppendAllText(_detailedLogPath, defaultLogEntry + Environment.NewLine);
+                    File.AppendAllText(_detailedLogPath, comment + Environment.NewLine);
                 }
             }
             catch (Exception ex)

@@ -28,7 +28,7 @@ Backup2FS is a Windows application designed to help recover and normalize iOS ba
 ![Log Output](docs/screenshots/log_output.png)
 
 ### About Dialog
-![About Dialog](docs/screenshots/about_dialog.png)
+![About Dialog](docs/screenshots/about_dialogue.png)
 
 ## System Requirements
 
